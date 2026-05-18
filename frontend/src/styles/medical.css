@@ -1,0 +1,477 @@
+/* Medical UI — светлая бело-зелёная тема, «острова»
+ * Макет: .cursor/rules/frontend-design.mdc (local, gitignored)
+ */
+.medical-app {
+  --mc-primary: #10b981;
+  --mc-primary-dark: #059669;
+  --mc-primary-light: #ecfdf5;
+  --mc-primary-muted: #d1fae5;
+  --mc-bg: #f4f7f5;
+  --mc-bg-accent: linear-gradient(160deg, #f0fdf4 0%, #f4f7f5 45%, #ffffff 100%);
+  --mc-surface: #ffffff;
+  --mc-text: #0f172a;
+  --mc-text-muted: #64748b;
+  --mc-border: #e2e8f0;
+  --mc-border-soft: #f1f5f9;
+  --mc-danger: #ef4444;
+  --mc-danger-bg: #fef2f2;
+  --mc-admin: #059669;
+  --mc-doctor: #0d9488;
+  --mc-patient: #10b981;
+  --mc-radius: 16px;
+  --mc-radius-sm: 10px;
+  --mc-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(16, 185, 129, 0.08);
+  --mc-shadow-hover: 0 4px 20px rgba(16, 185, 129, 0.12);
+  --mc-gap: 1.25rem;
+  --mc-page-max: 1200px;
+
+  min-height: 100svh;
+  background: var(--mc-bg);
+  background: var(--mc-bg-accent);
+  color: var(--mc-text);
+  text-align: left;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.medical-app h1,
+.medical-app h2,
+.medical-app h3 {
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--mc-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.medical-app h1 {
+  font-size: 1.75rem;
+}
+
+.medical-app h2 {
+  font-size: 1.125rem;
+}
+
+/* --- Layout shell --- */
+.mc-shell {
+  max-width: var(--mc-page-max);
+  margin: 0 auto;
+  padding: 0 1.25rem 2rem;
+}
+
+.mc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: var(--mc-gap);
+  flex-wrap: wrap;
+}
+
+.mc-header__left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--mc-primary-dark);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  background: var(--mc-surface);
+  border-radius: 999px;
+  border: 1px solid var(--mc-border);
+  box-shadow: var(--mc-shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mc-back:hover {
+  border-color: var(--mc-primary);
+  box-shadow: var(--mc-shadow-hover);
+}
+
+.mc-badge {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mc-badge--patient {
+  background: var(--mc-primary-light);
+  color: var(--mc-primary-dark);
+  border: 1px solid var(--mc-primary-muted);
+}
+
+.mc-badge--doctor {
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.mc-badge--admin {
+  background: var(--mc-primary-light);
+  color: var(--mc-admin);
+  border: 1px solid var(--mc-primary-muted);
+}
+
+.mc-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-gap);
+}
+
+/* --- Island (карточка-остров) --- */
+.mc-island {
+  background: var(--mc-surface);
+  border-radius: var(--mc-radius);
+  border: 1px solid var(--mc-border-soft);
+  box-shadow: var(--mc-shadow);
+  padding: 1.25rem 1.5rem;
+  min-width: 0; /* важно для grid/flex — не вылезает за край */
+}
+
+.mc-island--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mc-island__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mc-island__head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mc-island__head h2::before {
+  content: '';
+  width: 4px;
+  height: 1.25rem;
+  background: var(--mc-primary);
+  border-radius: 4px;
+}
+
+.mc-island__desc {
+  margin: 0;
+  color: var(--mc-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* --- Home --- */
+.mc-home {
+  text-align: center;
+  padding: 2.5rem 0 3rem;
+}
+
+.mc-home__hero {
+  margin-bottom: 2.5rem;
+}
+
+.mc-home__hero h1 {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #059669, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mc-home__hero p {
+  color: var(--mc-text-muted);
+  font-size: 1rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.mc-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--mc-gap);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.mc-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 2rem 1.5rem;
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border-soft);
+  border-radius: var(--mc-radius);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--mc-shadow);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.mc-role-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--mc-primary-muted);
+  box-shadow: var(--mc-shadow-hover);
+}
+
+.mc-role-card__icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  background: var(--mc-primary-light);
+  border-radius: 14px;
+}
+
+.mc-role-card h2 {
+  font-size: 1.15rem;
+}
+
+.mc-role-card span {
+  font-size: 0.85rem;
+  color: var(--mc-text-muted);
+}
+
+/* --- Patient card --- */
+.mc-patient-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mc-patient-meta {
+  color: var(--mc-text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.35rem;
+}
+
+.mc-tabs-island {
+  padding: 0.5rem 1rem 0;
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  border-bottom: none;
+  box-shadow: none;
+  background: transparent;
+  border: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.mc-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.35rem;
+  background: var(--mc-surface);
+  border-radius: var(--mc-radius);
+  border: 1px solid var(--mc-border-soft);
+  box-shadow: var(--mc-shadow);
+}
+
+.mc-tab {
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--mc-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--mc-radius-sm);
+  transition: background 0.15s, color 0.15s;
+}
+
+.mc-tab:hover {
+  background: var(--mc-primary-light);
+  color: var(--mc-primary-dark);
+}
+
+.mc-tab--active {
+  background: var(--mc-primary);
+  color: white;
+}
+
+.mc-readonly-hint {
+  padding: 0.85rem 1.1rem;
+  background: var(--mc-primary-light);
+  border: 1px solid var(--mc-primary-muted);
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.875rem;
+  color: var(--mc-primary-dark);
+}
+
+.mc-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.mc-stat-card {
+  padding: 1.1rem 1.2rem;
+  background: var(--mc-primary-light);
+  border-radius: var(--mc-radius-sm);
+  border: 1px solid var(--mc-primary-muted);
+}
+
+.mc-stat-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--mc-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mc-stat-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--mc-text);
+}
+
+/* --- Admin: вертикальный стек островов --- */
+.mc-admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.mc-admin-stat {
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.mc-admin-stat__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--mc-primary-dark);
+  line-height: 1.2;
+}
+
+.mc-admin-stat__label {
+  font-size: 0.8rem;
+  color: var(--mc-text-muted);
+  margin-top: 0.25rem;
+}
+
+.mc-admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-gap);
+}
+
+/* --- Tables --- */
+.mc-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.mc-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.mc-table th,
+.mc-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--mc-border-soft);
+  vertical-align: middle;
+}
+
+.mc-table th {
+  color: var(--mc-text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #fafafa;
+}
+
+.mc-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.mc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mc-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* --- Buttons --- */
+.mc-btn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.mc-btn:active {
+  transform: scale(0.98);
+}
+
+.mc-btn--primary {
+  background: var(--mc-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.mc-btn--primary:hover {
+  background: var(--mc-primary-dark);
+}
+
+.mc-btn--ghost {
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border);
+  color: var(--mc-text);
+}
+
+.mc-btn--ghost:hover {
+  border-color: var(--mc-primary);
+  color: var(--mc-primary-dark);
+}
+
+.mc-btn--danger {
+  background: var(--mc-danger-bg);
+  color: var(--mc-danger);
+  border: 1px solid #fecaca;
+}
+
+.mc-btn--sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+}

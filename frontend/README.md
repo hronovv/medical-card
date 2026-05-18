@@ -1,3 +1,15 @@
+# Medical Card — Frontend
+
+## UI mockup (design system)
+
+- **Spec (Cursor, local):** `.cursor/rules/frontend-design.mdc` — не в git, только у вас в IDE
+- **Styles:** `src/styles/medical.css` — классы `mc-*`
+- **Routes:** `/`, `/patient`, `/doctor`, `/admin`
+
+Reuse `Layout`, `PatientCardView`, island pattern from the rule above.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
