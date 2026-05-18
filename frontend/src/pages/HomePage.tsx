@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import logoUrl from '../assets/logo.svg'
 import { PartnerLogo } from '../components/PartnerLogos'
+import { HeroCardPreview } from '../components/HeroCardPreview'
 
 const partners = [
   { name: 'Синапс', variant: 'synapse' as const, tag: 'Лаборатория' },
   { name: 'Кванта', variant: 'quanta' as const, tag: 'Клиника' },
-  { name: 'Пульсар', variant: 'pulsar' as const, tag: 'Диагностика' },
+  { name: 'Нова', variant: 'nova' as const, tag: 'Диагностика' },
   { name: 'Эффон', variant: 'effon' as const, tag: 'Лаборатория' },
   { name: 'Орион', variant: 'orion' as const, tag: 'Медцентр' },
 ] as const
@@ -39,13 +40,13 @@ export function HomePage() {
       <header className="mc-landing-nav">
         <div className="mc-shell mc-landing-nav__inner">
           <Link to="/" className="mc-landing-logo">
-            <img src={logoUrl} alt="" className="mc-landing-logo__img" width={32} height={32} />
-            МедКарта
+            <img src={logoUrl} alt="Пульс" className="mc-landing-logo__img" width={32} height={32} />
+            Пульс
           </Link>
           <nav className="mc-landing-nav__links">
             <a href="#features">Возможности</a>
-            <Link to="/demo" className="mc-btn mc-btn--ghost mc-btn--sm">
-              Демо
+            <Link to="/demo" className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta">
+              Войти
             </Link>
           </nav>
         </div>
@@ -68,25 +69,10 @@ export function HomePage() {
                 <Link to="/demo" className="mc-btn mc-btn--primary mc-btn--lg">
                   Войти
                 </Link>
-                <Link to="/demo" className="mc-btn mc-btn--ghost mc-btn--lg">
-                  Демо-режим
-                </Link>
               </div>
             </div>
 
-            <div className="mc-island mc-landing-preview" aria-hidden>
-              <div className="mc-landing-preview__bar" />
-              <div className="mc-landing-preview__row">
-                <span className="mc-landing-preview__pill mc-landing-preview__pill--active" />
-                <span className="mc-landing-preview__pill" />
-                <span className="mc-landing-preview__pill" />
-              </div>
-              <div className="mc-landing-preview__cards">
-                <div className="mc-landing-preview__card" />
-                <div className="mc-landing-preview__card" />
-                <div className="mc-landing-preview__card mc-landing-preview__card--wide" />
-              </div>
-            </div>
+            <HeroCardPreview />
           </div>
         </section>
 
@@ -118,10 +104,12 @@ export function HomePage() {
 
         <section id="features" className="mc-landing-features">
           <div className="mc-shell">
-            <h2 className="mc-landing-section-title">Что внутри системы</h2>
-            <p className="mc-landing-section-sub">
-              Основные разделы после входа в аккаунт
-            </p>
+            <div className="mc-landing-section-head">
+              <h2 className="mc-landing-section-title">Что внутри системы</h2>
+              <p className="mc-landing-section-sub">
+                Основные разделы после входа в аккаунт
+              </p>
+            </div>
             <div className="mc-landing-features__grid">
               {features.map((f) => (
                 <article key={f.title} className="mc-island mc-landing-feature">
@@ -151,7 +139,7 @@ export function HomePage() {
 
       <footer className="mc-landing-footer">
         <div className="mc-shell">
-          <p>© МедКарта</p>
+          <p>© {new Date().getFullYear()} Пульс. Все права защищены.</p>
         </div>
       </footer>
     </div>

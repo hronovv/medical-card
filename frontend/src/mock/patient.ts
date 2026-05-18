@@ -1,6 +1,6 @@
 export const mockPatient = {
   id: '1',
-  fullName: 'Иванов Иван Иванович',
+  fullName: 'Григорьев Андрей Иванович',
   birthDate: '12.03.1990',
   phone: '+7 (999) 123-45-67',
 }
@@ -11,8 +11,8 @@ export const mockDiseases = [
 ]
 
 export const mockAnalyses = [
-  { id: '1', type: 'Общий анализ крови', result: 'В пределах нормы', date: '10.05.2026' },
-  { id: '2', type: 'Глюкоза', result: '5.8 ммоль/л', date: '02.04.2026' },
+  { id: '1', type: 'Глюкоза', result: '5.8 ммоль/л', date: '10.05.2026' },
+  { id: '2', type: 'Общий анализ крови', result: 'В пределах нормы', date: '02.04.2026' },
 ]
 
 export const mockVisits = [

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type PartnerVariant = 'synapse' | 'quanta' | 'pulsar' | 'effon' | 'orion'
+export type PartnerVariant = 'synapse' | 'quanta' | 'nova' | 'effon' | 'orion'
 
 type PartnerLogoProps = {
   variant: PartnerVariant
@@ -56,7 +56,7 @@ const icons: Record<PartnerVariant, ReactNode> = {
       />
     </svg>
   ),
-  pulsar: (
+  nova: (
     <svg viewBox="0 0 48 48" aria-hidden>
       <circle cx="24" cy="24" r="4" fill="currentColor" />
       <path
