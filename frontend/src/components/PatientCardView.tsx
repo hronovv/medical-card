@@ -70,10 +70,6 @@ export function PatientCardView({ editable }: PatientCardViewProps) {
         </div>
       </section>
 
-      {!editable && (
-        <p className="mc-readonly-hint">Режим просмотра — только ваша медицинская карта.</p>
-      )}
-
       <nav className="mc-tabs" aria-label="Разделы карты">
         {tabs.map((t) => (
           <button

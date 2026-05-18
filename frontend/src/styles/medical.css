@@ -1,6 +1,4 @@
-/* Medical UI — светлая бело-зелёная тема, «острова»
- * Макет: .cursor/rules/frontend-design.mdc (local, gitignored)
- */
+/* Medical UI — бело-зелёная тема, острова */
 .medical-app {
   --mc-primary: #10b981;
   --mc-primary-dark: #059669;
@@ -474,4 +472,264 @@
 .mc-btn--sm {
   padding: 0.35rem 0.65rem;
   font-size: 0.75rem;
+}
+
+.mc-btn--lg {
+  padding: 0.75rem 1.35rem;
+  font-size: 0.9375rem;
+}
+
+a.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.mc-btn:disabled,
+.mc-btn--primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mc-badge--dev {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.mc-header--center {
+  justify-content: space-between;
+}
+
+/* --- Landing (главная) --- */
+.mc-landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--mc-border-soft);
+}
+
+.mc-landing-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.mc-landing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--mc-text);
+  text-decoration: none;
+}
+
+.mc-landing-logo__mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--mc-primary), var(--mc-primary-dark));
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.mc-landing-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.mc-landing-nav__links a {
+  color: var(--mc-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.mc-landing-nav__links a:hover {
+  color: var(--mc-primary-dark);
+}
+
+.mc-landing-hero {
+  padding: 3rem 0 4rem;
+}
+
+.mc-landing-hero__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .mc-landing-hero__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mc-landing-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mc-primary-dark);
+  margin: 0 0 0.75rem;
+}
+
+.mc-landing-hero h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.mc-landing-hero__accent {
+  color: var(--mc-primary-dark);
+}
+
+.mc-landing-hero__lead {
+  color: var(--mc-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+  max-width: 32rem;
+}
+
+.mc-landing-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.mc-landing-hero__note {
+  font-size: 0.8rem;
+  color: var(--mc-text-muted);
+  margin: 0;
+}
+
+.mc-landing-preview {
+  padding: 1.5rem;
+  min-height: 280px;
+}
+
+.mc-landing-preview__bar {
+  height: 10px;
+  width: 40%;
+  background: var(--mc-primary-muted);
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+}
+
+.mc-landing-preview__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.mc-landing-preview__pill {
+  height: 28px;
+  width: 72px;
+  background: var(--mc-border-soft);
+  border-radius: 999px;
+}
+
+.mc-landing-preview__pill--active {
+  background: var(--mc-primary);
+}
+
+.mc-landing-preview__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.mc-landing-preview__card {
+  height: 64px;
+  background: var(--mc-primary-light);
+  border-radius: var(--mc-radius-sm);
+  border: 1px solid var(--mc-primary-muted);
+}
+
+.mc-landing-preview__card--wide {
+  grid-column: 1 / -1;
+  height: 48px;
+}
+
+.mc-landing-features {
+  padding: 2rem 0 3rem;
+}
+
+.mc-landing-section-title {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.mc-landing-section-sub {
+  text-align: center;
+  color: var(--mc-text-muted);
+  margin: 0 auto 2rem;
+  max-width: 28rem;
+}
+
+.mc-landing-features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--mc-gap);
+}
+
+.mc-landing-feature h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0 0.35rem;
+}
+
+.mc-landing-feature p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mc-text-muted);
+  line-height: 1.5;
+}
+
+.mc-landing-feature__icon {
+  font-size: 1.5rem;
+}
+
+.mc-landing-cta {
+  padding: 0 0 3rem;
+}
+
+.mc-landing-cta__box {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--mc-primary-light), var(--mc-surface));
+  border-color: var(--mc-primary-muted);
+}
+
+.mc-landing-cta__box h2 {
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.mc-landing-cta__box p {
+  color: var(--mc-text-muted);
+  margin: 0 auto 1.25rem;
+  max-width: 28rem;
+}
+
+.mc-landing-footer {
+  padding: 1.5rem 0 2rem;
+  border-top: 1px solid var(--mc-border-soft);
+  text-align: center;
+}
+
+.mc-landing-footer p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--mc-text-muted);
 }

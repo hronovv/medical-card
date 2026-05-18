@@ -1,53 +1,104 @@
-# Project medical-card
+# Медицинская карта
 
-One Paragraph of project description goes here
+Веб-приложение для ведения электронной медицинской карты: диагнозы, анализы, посещения врачей и рецепты. Проект курсовой работы.
 
-## Getting Started
+## Стек
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+| Часть | Технологии |
+|-------|------------|
+| Backend | Go, Gin, PostgreSQL |
+| Frontend | React, TypeScript, Vite |
+| Инфраструктура | Docker Compose, Makefile |
 
-## MakeFile
+## Возможности
 
-Run build make command with tests
+- **Пациент** — просмотр своей медицинской карты
+- **Врач** — ведение записей по пациентам
+- **Администратор** — управление пациентами, врачами и справочником болезней
+
+## Быстрый старт
+
+### Требования
+
+- Go 1.26+
+- Node.js 20+
+- PostgreSQL (локально или через Docker)
+
+### Запуск фронтенда
+
 ```bash
-make all
+make dev-frontend
 ```
 
-Build the application
+Откройте http://localhost:5173
+
+### Запуск API
+
 ```bash
-make build
+make dev-api
 ```
 
-Run the application
+API: http://localhost:8080
+
+### Postgres в Docker
+
 ```bash
-make run
+make dev-db
+make dev-api
 ```
-Create DB container
+
+### Полный стек в Docker
+
 ```bash
+cp .env.example .env
 make docker-run
 ```
 
-Shutdown DB Container
-```bash
-make docker-down
+## Переменные окружения
+
+Скопируйте `.env.example` в `.env` и при необходимости измените значения:
+
+| Переменная | Описание |
+|------------|----------|
+| `PORT` | Порт HTTP API (по умолчанию `8080`) |
+| `DB_HOST` | Хост PostgreSQL (`localhost` или `postgres` в Docker) |
+| `DB_PORT` | Порт PostgreSQL |
+| `DB_NAME` | Имя базы данных |
+| `DB_USER` / `DB_PASSWORD` | Учётные данные |
+
+## Makefile
+
+| Команда | Описание |
+|---------|----------|
+| `make dev-frontend` | Dev-сервер React (Vite) |
+| `make dev-api` | API на Go |
+| `make dev-db` | Только PostgreSQL в Docker |
+| `make dev-down` | Остановить локальные процессы на 8080/5173 |
+| `make docker-run` | Собрать и поднять compose |
+| `make docker-down` | Остановить compose |
+| `make build` | Собрать бинарник API |
+| `make test` | Тесты Go |
+
+## Структура репозитория
+
+```
+medical-card/
+├── cmd/api/           # Точка входа API
+├── internal/          # Сервер, работа с БД
+├── frontend/          # React-приложение
+├── docker-compose.yml
+└── Makefile
 ```
 
-DB Integrations Test:
-```bash
-make itest
-```
+## API (текущее состояние)
 
-Live reload the application:
-```bash
-make watch
-```
+| Метод | Путь | Описание |
+|-------|------|----------|
+| GET | `/` | Приветствие |
+| GET | `/health` | Статус сервиса и БД |
 
-Run the test suite:
-```bash
-make test
-```
+REST для сущностей медкарты — в разработке.
 
-Clean up binary from the last build:
-```bash
-make clean
-```
+## Лицензия
+
+Учебный проект.

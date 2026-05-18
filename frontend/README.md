@@ -1,85 +1,80 @@
-# Medical Card — Frontend
+# Frontend — Медицинская карта
 
-## UI mockup (design system)
+Клиентская часть приложения: лендинг, выбор роли и интерфейсы для пациента, врача и администратора.
 
-- **Spec (Cursor, local):** `.cursor/rules/frontend-design.mdc` — не в git, только у вас в IDE
-- **Styles:** `src/styles/medical.css` — классы `mc-*`
-- **Routes:** `/`, `/patient`, `/doctor`, `/admin`
+## Стек
 
-Reuse `Layout`, `PatientCardView`, island pattern from the rule above.
+- React 19
+- TypeScript
+- Vite
+- React Router
 
----
+Стили — собственная дизайн-система на CSS (`src/styles/medical.css`): светлая бело-зелёная тема, карточки-«острова».
 
-# React + TypeScript + Vite
+## Запуск
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Из корня репозитория:
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+make dev-frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Или из этой папки:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+Приложение: http://localhost:5173
+
+В режиме разработки запросы к API проксируются на `http://127.0.0.1:8080` (префикс `/api`).
+
+## Сборка
+
+```bash
+npm run build
+npm run preview
+```
+
+Артефакты — в `dist/`.
+
+## Маршруты
+
+| Путь | Описание |
+|------|----------|
+| `/` | Главная страница |
+| `/demo` | Выбор роли (пациент / врач / администратор) |
+| `/patient` | Медицинская карта (просмотр) |
+| `/doctor` | Медицинская карта (редактирование) |
+| `/admin` | Панель администратора |
+
+## Структура
+
+```
+frontend/src/
+├── pages/           # Страницы
+├── components/      # Layout, карта пациента
+├── mock/            # Тестовые данные
+├── styles/          # medical.css
+├── App.tsx          # Маршрутизация
+└── main.tsx
+```
+
+## Переменные окружения
+
+Файл `.env` (см. `.env.example`):
+
+| Переменная | Описание |
+|------------|----------|
+| `VITE_API_PREFIX` | Префикс API-запросов (по умолчанию `/api`) |
+| `VITE_API_TARGET` | URL бэкенда для прокси Vite |
+
+## Скрипты
+
+| Команда | Описание |
+|---------|----------|
+| `npm run dev` | Dev-сервер с HMR |
+| `npm run build` | Production-сборка |
+| `npm run preview` | Просмотр сборки |
+| `npm run lint` | ESLint |

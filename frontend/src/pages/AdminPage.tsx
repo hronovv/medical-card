@@ -104,7 +104,7 @@ export function AdminPage() {
             </button>
           </div>
           <p className="mc-island__desc">
-            Администратор управляет общим каталогом МКБ: Гипертония, Сахарный диабет и др.
+            Общий каталог болезней по МКБ.
           </p>
         </section>
       </div>
