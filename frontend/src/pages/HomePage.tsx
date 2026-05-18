@@ -1,4 +1,14 @@
 import { Link } from 'react-router-dom'
+import logoUrl from '../assets/logo.svg'
+import { PartnerLogo } from '../components/PartnerLogos'
+
+const partners = [
+  { name: 'Синапс', variant: 'synapse' as const, tag: 'Лаборатория' },
+  { name: 'Кванта', variant: 'quanta' as const, tag: 'Клиника' },
+  { name: 'Пульсар', variant: 'pulsar' as const, tag: 'Диагностика' },
+  { name: 'Эффон', variant: 'effon' as const, tag: 'Лаборатория' },
+  { name: 'Орион', variant: 'orion' as const, tag: 'Медцентр' },
+] as const
 
 const features = [
   {
@@ -29,7 +39,7 @@ export function HomePage() {
       <header className="mc-landing-nav">
         <div className="mc-shell mc-landing-nav__inner">
           <Link to="/" className="mc-landing-logo">
-            <span className="mc-landing-logo__mark" aria-hidden />
+            <img src={logoUrl} alt="" className="mc-landing-logo__img" width={32} height={32} />
             МедКарта
           </Link>
           <nav className="mc-landing-nav__links">
@@ -76,6 +86,32 @@ export function HomePage() {
                 <div className="mc-landing-preview__card" />
                 <div className="mc-landing-preview__card mc-landing-preview__card--wide" />
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mc-landing-trust" aria-labelledby="trust-heading">
+          <div className="mc-shell">
+            <div className="mc-island mc-landing-trust__panel">
+              <div className="mc-landing-trust__head">
+                <h2 id="trust-heading" className="mc-landing-trust__title">
+                  Нам доверяют
+                </h2>
+                <p className="mc-landing-trust__sub">
+                  Примеры клиник и лабораторий, подключающих анализы к единой карте
+                </p>
+              </div>
+              <ul className="mc-landing-trust__grid">
+                {partners.map((p) => (
+                  <li key={p.name} className="mc-landing-trust__item">
+                    <PartnerLogo variant={p.variant} />
+                    <div className="mc-landing-trust__meta">
+                      <span className="mc-landing-trust__name">{p.name}</span>
+                      <span className="mc-landing-trust__tag">{p.tag}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>
