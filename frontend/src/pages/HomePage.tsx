@@ -45,7 +45,7 @@ export function HomePage() {
           </Link>
           <nav className="mc-landing-nav__links">
             <a href="#features">Возможности</a>
-            <Link to="/demo" className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta">
+            <Link to="/login" className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta">
               Войти
             </Link>
           </nav>
@@ -66,8 +66,11 @@ export function HomePage() {
                 рецепты. Для пациентов и клиник.
               </p>
               <div className="mc-landing-hero__actions">
-                <Link to="/demo" className="mc-btn mc-btn--primary mc-btn--lg">
+                <Link to="/login" className="mc-btn mc-btn--primary mc-btn--lg">
                   Войти
+                </Link>
+                <Link to="/register" className="mc-btn mc-btn--ghost mc-btn--lg">
+                  Регистрация
                 </Link>
               </div>
             </div>
@@ -128,10 +131,15 @@ export function HomePage() {
           <div className="mc-shell">
             <div className="mc-island mc-landing-cta__box">
               <h2>Готовы начать?</h2>
-              <p>Выберите роль и откройте медицинскую карту.</p>
-              <Link to="/demo" className="mc-btn mc-btn--primary">
-                Перейти в систему →
-              </Link>
+              <p>Войдите или создайте аккаунт пациента.</p>
+              <div className="mc-landing-cta__actions">
+                <Link to="/login" className="mc-btn mc-btn--primary">
+                  Войти →
+                </Link>
+                <Link to="/register" className="mc-btn mc-btn--ghost">
+                  Регистрация
+                </Link>
+              </div>
             </div>
           </div>
         </section>
