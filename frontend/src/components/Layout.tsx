@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import { LogoutButton } from './LogoutButton'
 
 type Role = 'patient' | 'doctor' | 'admin'
 
@@ -32,7 +33,10 @@ export function Layout({ role, title, children }: LayoutProps) {
             </Link>
             {title && <h1>{title}</h1>}
           </div>
-          <span className={`mc-badge ${badgeClass[role]}`}>{badgeLabel[role]}</span>
+          <div className="mc-header__right">
+            <span className={`mc-badge ${badgeClass[role]}`}>{badgeLabel[role]}</span>
+            <LogoutButton />
+          </div>
         </header>
         <main className="mc-main">{children}</main>
       </div>

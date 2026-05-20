@@ -1,93 +1,197 @@
-PORT ?= 8080
-DB_HOST ?= localhost
+# medical-card — команды разработки
+# Справка: make help
 
-.PHONY: all build build-api run dev dev-db dev-api dev-frontend dev-stop dev-down docker-run docker-down test itest clean watch
+.DEFAULT_GOAL := help
 
-all: build test
+PORT          ?= 8080
+FRONTEND_PORT ?= 5173
 
-build:
-	@echo "Building API..."
-	@go build -o bin/api cmd/api/main.go
+# С хоста (Mac) к контейнерам Docker — всегда localhost, не postgres/redis из .env
+DEV_DB_HOST    ?= localhost
+DEV_REDIS_HOST ?= localhost
 
-build-api: build
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
 
+# docker compose v2 или v1
+DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 
-run: dev-api dev-frontend
+MIGRATE := go run ./cmd/migrate
+API_RUN := DB_HOST=$(DEV_DB_HOST) REDIS_HOST=$(DEV_REDIS_HOST) PORT=$(PORT) go run ./cmd/api/main.go
 
-# --- Local development (recommended) ---
-# Terminal 1: make dev-db && make dev-api
-# Terminal 2: make dev-frontend
-# Open http://localhost:5173
+.PHONY: help \
+	setup dev-setup \
+	dev-db dev-down dev-stop dev-api dev-frontend dev-logs \
+	migrate-up migrate-down migrate-version migrate-force migrate-create \
+	build test itest clean watch \
+	docker-up docker-down
+
+# ---------------------------------------------------------------------------
+# Справка
+# ---------------------------------------------------------------------------
+
+help:
+	@echo "Пульс — medical-card"
+	@echo ""
+	@echo "Первый запуск:"
+	@echo "  cp .env.example .env"
+	@echo "  make dev-setup          # Postgres + Redis + миграции"
+	@echo "  make dev-api            # терминал 1 → http://localhost:$(PORT)"
+	@echo "  make dev-frontend       # терминал 2 → http://localhost:$(FRONTEND_PORT)"
+	@echo ""
+	@echo "Локальная разработка:"
+	@echo "  make dev-db             # поднять Postgres и Redis (Docker)"
+	@echo "  make dev-down           # остановить API, Vite, Postgres, Redis"
+	@echo "  make dev-stop           # только освободить порт API ($(PORT))"
+	@echo "  make dev-api            # API (DB/Redis → $(DEV_DB_HOST):…)"
+	@echo "  make dev-frontend       # Vite"
+	@echo "  make dev-logs           # логи Postgres и Redis"
+	@echo ""
+	@echo "Миграции (БД на $(DEV_DB_HOST):$(DB_PORT)):"
+	@echo "  make migrate-up"
+	@echo "  make migrate-down       # откат (STEPS=1 по умолчанию)"
+	@echo "  make migrate-version"
+	@echo "  make migrate-create NAME=описание"
+	@echo ""
+	@echo "Сборка и тесты:"
+	@echo "  make build              # bin/api"
+	@echo "  make test"
+	@echo "  make itest"
+	@echo "  make clean"
+	@echo "  make watch              # air (hot reload API)"
+	@echo ""
+	@echo "Docker (весь стек):"
+	@echo "  make docker-up"
+	@echo "  make docker-down"
+
+# ---------------------------------------------------------------------------
+# Локальная разработка
+# ---------------------------------------------------------------------------
+
+setup: ## alias для dev-setup
+	@$(MAKE) dev-setup
+
+dev-setup: dev-db
+	@echo "Waiting for Postgres..."
+	@sleep 3
+	@$(MAKE) migrate-up
+	@echo ""
+	@echo "Готово. Дальше:"
+	@echo "  make dev-api"
+	@echo "  make dev-frontend"
 
 dev-db:
-	@echo "Starting Postgres only (port from .env)..."
-	@docker compose up postgres -d
+	@echo "Starting Postgres + Redis..."
+	@$(DOCKER_COMPOSE) up postgres redis -d
+	@echo "Postgres → $(DEV_DB_HOST):$(DB_PORT)/$(DB_NAME)"
+	@echo "Redis  → $(DEV_REDIS_HOST):$(REDIS_PORT)"
 
-dev-api:
-	@echo "API http://localhost:$(PORT) (DB_HOST=$(DB_HOST))"
-	@lsof -ti :$(PORT) >/dev/null 2>&1 && { echo "Port $(PORT) busy. Run: make dev-stop"; exit 1; } || true
-	@DB_HOST=$(DB_HOST) PORT=$(PORT) go run cmd/api/main.go
+dev-down: dev-stop
+	@lsof -ti :$(FRONTEND_PORT) | xargs kill 2>/dev/null || true
+	@echo "Port $(FRONTEND_PORT) cleared (Vite)."
+	@$(DOCKER_COMPOSE) stop postgres redis 2>/dev/null || true
+	@echo "Postgres and Redis stopped."
 
-# Stop API on PORT (stale go run / bin/api)
 dev-stop:
 	@lsof -ti :$(PORT) | xargs kill 2>/dev/null || true
-	@echo "Port $(PORT) cleared (if anything was listening)."
+	@echo "Port $(PORT) cleared (API)."
 
-# Stop local dev: API + Vite (+ optional Docker Postgres)
-dev-down: dev-stop
-	@lsof -ti :5173 | xargs kill 2>/dev/null || true
-	@echo "Port 5173 cleared (Vite)."
-	@docker compose stop postgres 2>/dev/null || true
-	@echo "Done. Native Postgres (brew) keeps running — stop separately if needed."
+dev-api:
+	@echo "API http://localhost:$(PORT)"
+	@echo "  DB_HOST=$(DEV_DB_HOST)  REDIS_HOST=$(DEV_REDIS_HOST)"
+	@lsof -ti :$(PORT) >/dev/null 2>&1 && { echo "Port $(PORT) busy. Run: make dev-stop"; exit 1; } || true
+	@$(API_RUN)
 
 dev-frontend:
 	@npm install --prefer-offline --no-fund --prefix ./frontend
 	@npm run dev --prefix ./frontend
 
-dev:
-	@echo "Local dev — use two terminals:"
-	@echo "  1) make dev-db && make dev-api"
-	@echo "  2) make dev-frontend"
-	@echo "Ensure .env has DB_* vars. Local API: make dev-api (overrides DB_HOST=localhost)."
+dev-logs:
+	@$(DOCKER_COMPOSE) logs -f postgres redis
 
-# --- Docker (production) ---
-docker-run:
-	@if docker compose up --build 2>/dev/null; then \
-		: ; \
-	else \
-		echo "Falling back to Docker Compose V1"; \
-		docker-compose up --build; \
-	fi
+# ---------------------------------------------------------------------------
+# Миграции (с хоста — DB_HOST=localhost)
+# ---------------------------------------------------------------------------
 
-docker-down:
-	@if docker compose down 2>/dev/null; then \
-		: ; \
-	else \
-		echo "Falling back to Docker Compose V1"; \
-		docker-compose down; \
-	fi
+migrate-up:
+	@echo "Applying migrations → $(DEV_DB_HOST):$(DB_PORT)/$(DB_NAME)"
+	@DB_HOST=$(DEV_DB_HOST) $(MIGRATE) -command up
+
+migrate-down:
+	@echo "Rolling back $(or $(STEPS),1) migration(s) on $(DEV_DB_HOST)..."
+	@DB_HOST=$(DEV_DB_HOST) $(MIGRATE) -command down -steps $(or $(STEPS),1)
+
+migrate-version:
+	@DB_HOST=$(DEV_DB_HOST) $(MIGRATE) -command version
+
+migrate-force:
+	@test -n "$(VERSION)" || (echo "Usage: make migrate-force VERSION=<number>"; exit 1)
+	@DB_HOST=$(DEV_DB_HOST) $(MIGRATE) -command force -version $(VERSION)
+
+migrate-create:
+	@test -n "$(NAME)" || (echo "Usage: make migrate-create NAME=add_something"; exit 1)
+	@next=$$(printf "%06d" $$(($$(ls migrations/*.up.sql 2>/dev/null | wc -l | tr -d ' ') + 1))); \
+	touch "migrations/$${next}_$(NAME).up.sql" "migrations/$${next}_$(NAME).down.sql"; \
+	echo "Created migrations/$${next}_$(NAME).{up,down}.sql"
+
+# ---------------------------------------------------------------------------
+# Сборка, тесты
+# ---------------------------------------------------------------------------
+
+build:
+	@echo "Building bin/api..."
+	@go build -o bin/api ./cmd/api/main.go
 
 test:
-	@echo "Testing..."
-	@go test ./... -v
+	@go test ./... -count=1
 
 itest:
-	@echo "Running integration tests..."
-	@go test ./internal/database -v
+	@go test ./internal/database/... -count=1 -v
 
 clean:
-	@echo "Cleaning..."
-	@rm -rf bin main
+	@rm -rf bin/
+	@echo "Removed bin/"
 
 watch:
-	@if command -v air > /dev/null; then \
-		air; \
+	@if command -v air >/dev/null 2>&1; then \
+		DB_HOST=$(DEV_DB_HOST) REDIS_HOST=$(DEV_REDIS_HOST) PORT=$(PORT) air; \
 	else \
-		read -p "Go's 'air' is not installed. Install? [Y/n] " choice; \
-		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-			go install github.com/air-verse/air@latest; \
-			air; \
-		else \
-			exit 1; \
-		fi; \
+		echo "Install air: go install github.com/air-verse/air@latest"; \
+		exit 1; \
 	fi
+
+# ---------------------------------------------------------------------------
+# Docker — полный стек (app + frontend + postgres + redis)
+# ---------------------------------------------------------------------------
+
+docker-up:
+	@test -f .env || (echo "Create .env first: cp .env.example .env" && exit 1)
+	@$(DOCKER_COMPOSE) up --build -d
+	@echo ""
+	@echo "Pulse is running:"
+	@echo "  Frontend  http://localhost:5173"
+	@echo "  API       http://localhost:$(PORT)"
+	@echo "  Health    http://localhost:$(PORT)/health"
+	@echo ""
+	@echo "Demo login: patient2@pulse.ru / patient123"
+
+docker-down:
+	@$(DOCKER_COMPOSE) down
+	@echo "All compose services stopped."
+
+docker-reset:
+	@$(DOCKER_COMPOSE) down -v
+	@echo "Volumes removed. Run make docker-up for a fresh install."
+
+# Устаревшие алиасы (совместимость со старыми командами)
+.PHONY: dev build-api run docker-run all
+dev: help
+build-api: build
+run:
+	@echo "Use two terminals: make dev-api && make dev-frontend"
+	@exit 1
+docker-run: docker-up
+
+all: build test

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { CabinetIcon } from '../components/CabinetIcon'
+import { roleHomePathFor, useAuth } from '../context/AuthContext'
 import logoUrl from '../assets/logo.svg'
 import { PartnerLogo } from '../components/PartnerLogos'
 import { HeroCardPreview } from '../components/HeroCardPreview'
@@ -35,6 +37,9 @@ const features = [
 ]
 
 export function HomePage() {
+  const { user } = useAuth()
+  const cabinetPath = user ? roleHomePathFor(user.role) : '/login'
+
   return (
     <div className="medical-app">
       <header className="mc-landing-nav">
@@ -45,9 +50,19 @@ export function HomePage() {
           </Link>
           <nav className="mc-landing-nav__links">
             <a href="#features">Возможности</a>
-            <Link to="/login" className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta">
-              Войти
-            </Link>
+            {user ? (
+              <Link
+                to={cabinetPath}
+                className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta mc-cabinet-btn"
+              >
+                <CabinetIcon className="mc-cabinet-btn__icon" />
+                Личный кабинет
+              </Link>
+            ) : (
+              <Link to="/login" className="mc-btn mc-btn--ghost mc-btn--sm mc-landing-nav__cta">
+                Войти
+              </Link>
+            )}
           </nav>
         </div>
       </header>
@@ -66,12 +81,24 @@ export function HomePage() {
                 рецепты. Для пациентов и клиник.
               </p>
               <div className="mc-landing-hero__actions">
-                <Link to="/login" className="mc-btn mc-btn--primary mc-btn--lg">
-                  Войти
-                </Link>
-                <Link to="/register" className="mc-btn mc-btn--ghost mc-btn--lg">
-                  Регистрация
-                </Link>
+                {user ? (
+                  <Link
+                    to={cabinetPath}
+                    className="mc-btn mc-btn--primary mc-btn--lg mc-cabinet-btn"
+                  >
+                    <CabinetIcon className="mc-cabinet-btn__icon" />
+                    Личный кабинет
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/login" className="mc-btn mc-btn--primary mc-btn--lg">
+                      Войти
+                    </Link>
+                    <Link to="/register" className="mc-btn mc-btn--ghost mc-btn--lg">
+                      Регистрация
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
 
@@ -130,15 +157,28 @@ export function HomePage() {
         <section className="mc-landing-cta">
           <div className="mc-shell">
             <div className="mc-island mc-landing-cta__box">
-              <h2>Готовы начать?</h2>
-              <p>Войдите или создайте аккаунт пациента.</p>
+              <h2>{user ? 'С возвращением!' : 'Готовы начать?'}</h2>
+              <p>
+                {user
+                  ? 'Перейдите в личный кабинет, чтобы работать с медицинской картой.'
+                  : 'Войдите или создайте аккаунт пациента.'}
+              </p>
               <div className="mc-landing-cta__actions">
-                <Link to="/login" className="mc-btn mc-btn--primary">
-                  Войти →
-                </Link>
-                <Link to="/register" className="mc-btn mc-btn--ghost">
-                  Регистрация
-                </Link>
+                {user ? (
+                  <Link to={cabinetPath} className="mc-btn mc-btn--primary mc-cabinet-btn">
+                    <CabinetIcon className="mc-cabinet-btn__icon" />
+                    Личный кабинет →
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/login" className="mc-btn mc-btn--primary">
+                      Войти →
+                    </Link>
+                    <Link to="/register" className="mc-btn mc-btn--ghost">
+                      Регистрация
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

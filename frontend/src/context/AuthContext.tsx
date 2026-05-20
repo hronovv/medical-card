@@ -2,51 +2,37 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
-import { REGISTERED_USERS_STORAGE_KEY, SEED_USERS } from '../mock/users'
-import type { Role, SessionUser, User } from '../types/auth'
+import { fetchMe, loginUser, logoutUser, registerUser, type AuthUser } from '../api/auth'
+import { ApiError } from '../api/client'
+import type { Role, SessionUser } from '../types/auth'
 
 const SESSION_STORAGE_KEY = 'pulse_session'
 
 type AuthContextValue = {
   user: SessionUser | null
+  isBootstrapping: boolean
   login: (email: string, password: string) => Promise<SessionUser>
-  register: (fullName: string, email: string, password: string) => Promise<SessionUser>
-  logout: () => void
+  register: (
+    fullName: string,
+    email: string,
+    password: string,
+    birthDate: string,
+    phone: string,
+  ) => Promise<SessionUser>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function readRegisteredUsers(): User[] {
+function readStoredSession(): SessionUser | null {
   try {
-    const raw = localStorage.getItem(REGISTERED_USERS_STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as User[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-function writeRegisteredUsers(users: User[]) {
-  localStorage.setItem(REGISTERED_USERS_STORAGE_KEY, JSON.stringify(users))
-}
-
-function loadAllUsers(): User[] {
-  const registered = readRegisteredUsers()
-  const byEmail = new Map<string, User>()
-  for (const user of [...SEED_USERS, ...registered]) {
-    byEmail.set(user.email.toLowerCase(), user)
-  }
-  return [...byEmail.values()]
-}
-
-function readSession(): SessionUser | null {
-  try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY)
     if (!raw) return null
     return JSON.parse(raw) as SessionUser
   } catch {
@@ -54,20 +40,24 @@ function readSession(): SessionUser | null {
   }
 }
 
-function writeSession(user: SessionUser | null) {
+function writeStoredSession(user: SessionUser | null) {
   if (!user) {
-    sessionStorage.removeItem(SESSION_STORAGE_KEY)
+    localStorage.removeItem(SESSION_STORAGE_KEY)
     return
   }
-  sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user))
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user))
 }
 
-function toSessionUser(user: User): SessionUser {
+function toSessionUser(user: AuthUser, token: string): SessionUser {
   return {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
+    birthDate: user.birthDate,
+    phone: user.phone,
+    specialty: user.specialty,
+    token,
   }
 }
 
@@ -91,65 +81,112 @@ type AuthProviderProps = {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<SessionUser | null>(() => readSession())
+  const [user, setUser] = useState<SessionUser | null>(null)
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const bootstrapIdRef = useRef(0)
+
+  useEffect(() => {
+    const stored = readStoredSession()
+    if (!stored?.token) {
+      setUser(null)
+      setIsBootstrapping(false)
+      return
+    }
+
+    const bootstrapId = ++bootstrapIdRef.current
+    let cancelled = false
+
+    // Показываем кэш из localStorage; сбрасываем только при 401 (не при сетевых ошибках dev).
+    setUser(stored)
+    setIsBootstrapping(true)
+
+    fetchMe(stored.token)
+      .then(({ user: fresh }) => {
+        if (cancelled || bootstrapId !== bootstrapIdRef.current) return
+        const session = toSessionUser(fresh, stored.token)
+        writeStoredSession(session)
+        setUser(session)
+      })
+      .catch((err) => {
+        if (cancelled || bootstrapId !== bootstrapIdRef.current) return
+        if (err instanceof ApiError && err.status === 401) {
+          writeStoredSession(null)
+          setUser(null)
+        } else {
+          setUser(stored)
+        }
+      })
+      .finally(() => {
+        if (!cancelled && bootstrapId === bootstrapIdRef.current) {
+          setIsBootstrapping(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase()
-    const found = loadAllUsers().find(
-      (u) => u.email.toLowerCase() === normalizedEmail && u.password === password,
-    )
-    if (!found) {
-      throw new Error('Неверный email или пароль')
+    try {
+      const result = await loginUser({ email, password })
+      const session = toSessionUser(result.user, result.token)
+      writeStoredSession(session)
+      setUser(session)
+      return session
+    } catch (err) {
+      if (err instanceof ApiError) {
+        throw new Error(err.message)
+      }
+      throw new Error('Не удалось связаться с сервером')
     }
-    const session = toSessionUser(found)
-    writeSession(session)
-    setUser(session)
-    return session
   }, [])
 
   const register = useCallback(
-    async (fullName: string, email: string, password: string) => {
-      const normalizedEmail = email.trim().toLowerCase()
-      const trimmedName = fullName.trim()
-      if (!trimmedName) {
-        throw new Error('Укажите ФИО')
+    async (
+      fullName: string,
+      email: string,
+      password: string,
+      birthDate: string,
+      phone: string,
+    ) => {
+      try {
+        const result = await registerUser({
+          fullName,
+          email,
+          password,
+          birthDate,
+          phone,
+        })
+        const session = toSessionUser(result.user, result.token)
+        writeStoredSession(session)
+        setUser(session)
+        return session
+      } catch (err) {
+        if (err instanceof ApiError) {
+          throw new Error(err.message)
+        }
+        throw new Error('Не удалось связаться с сервером')
       }
-      if (password.length < 8) {
-        throw new Error('Пароль должен быть не короче 8 символов')
-      }
-
-      const exists = loadAllUsers().some((u) => u.email.toLowerCase() === normalizedEmail)
-      if (exists) {
-        throw new Error('Пользователь с таким email уже зарегистрирован')
-      }
-
-      const newUser: User = {
-        id: `user-${crypto.randomUUID()}`,
-        email: normalizedEmail,
-        password,
-        fullName: trimmedName,
-        role: 'patient',
-      }
-
-      const registered = readRegisteredUsers()
-      writeRegisteredUsers([...registered, newUser])
-
-      const session = toSessionUser(newUser)
-      writeSession(session)
-      setUser(session)
-      return session
     },
     [],
   )
 
-  const logout = useCallback(() => {
-    writeSession(null)
+  const logout = useCallback(async () => {
+    const token = user?.token ?? readStoredSession()?.token
+    if (token) {
+      try {
+        await logoutUser(token)
+      } catch {
+      }
+    }
+    writeStoredSession(null)
     setUser(null)
-  }, [])
+  }, [user])
 
   const value = useMemo(
-    () => ({ user, login, register, logout }),
-    [user, login, register, logout],
+    () => ({ user, isBootstrapping, login, register, logout }),
+    [user, isBootstrapping, login, register, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

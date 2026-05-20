@@ -5,6 +5,9 @@
 frontend/.env
 frontend/.env.local
 
+# --- Project docs (local notes, not for repo) ---
+docs/
+
 # --- Go build & tools ---
 bin/
 main
@@ -20,6 +23,7 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+*.tsbuildinfo
 *.local
 
 # --- Logs ---
@@ -30,10 +34,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# --- Cursor ---
+# --- Cursor / IDE / OS ---
 .cursor/
-
-# --- IDE & OS ---
 .vscode/
 .idea/
 *.swp

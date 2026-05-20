@@ -1,0 +1,17 @@
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+.env
+.env.*
+!.env.example
+docs/
+bin/
+tmp/
+*.log
+node_modules/
+frontend/node_modules/
+frontend/dist/
+**/*_test.go
+coverage.out

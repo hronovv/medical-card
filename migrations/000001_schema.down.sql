@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS appointment_requests CASCADE;
+DROP TABLE IF EXISTS patient_prescriptions CASCADE;
+DROP TABLE IF EXISTS patient_visits CASCADE;
+DROP TABLE IF EXISTS patient_analyses CASCADE;
+DROP TABLE IF EXISTS patient_diseases CASCADE;
+DROP TABLE IF EXISTS disease_catalog CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TYPE IF EXISTS appointment_status;
+DROP TYPE IF EXISTS user_role;

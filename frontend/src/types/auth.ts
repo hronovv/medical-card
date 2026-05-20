@@ -1,11 +1,12 @@
 export type Role = 'patient' | 'doctor' | 'admin'
 
-export type User = {
+export type SessionUser = {
   id: string
   email: string
-  password: string
   fullName: string
   role: Role
+  birthDate?: string
+  phone?: string
+  specialty?: string
+  token: string
 }
-
-export type SessionUser = Pick<User, 'id' | 'email' | 'fullName' | 'role'>
