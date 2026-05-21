@@ -36,22 +36,22 @@ func (s *Server) RegisterRoutes() http.Handler {
 		patients.GET("", s.patientHandler.List)
 		patients.GET("/me", middleware.RequireRole(models.RolePatient), s.patientHandler.GetMe)
 
-		doctorOnly := middleware.RequireRole(models.RoleDoctor)
-		patients.POST("/:id/diseases", doctorOnly, s.patientHandler.CreateDisease)
-		patients.PATCH("/:id/diseases/:diseaseId", doctorOnly, s.patientHandler.UpdateDisease)
-		patients.DELETE("/:id/diseases/:diseaseId", doctorOnly, s.patientHandler.DeleteDisease)
+		medcardWrite := middleware.RequireAnyRole(models.RoleDoctor, models.RoleAdmin)
+		patients.POST("/:id/diseases", medcardWrite, s.patientHandler.CreateDisease)
+		patients.PATCH("/:id/diseases/:diseaseId", medcardWrite, s.patientHandler.UpdateDisease)
+		patients.DELETE("/:id/diseases/:diseaseId", medcardWrite, s.patientHandler.DeleteDisease)
 
-		patients.POST("/:id/analyses", doctorOnly, s.patientHandler.CreateAnalysis)
-		patients.PATCH("/:id/analyses/:analysisId", doctorOnly, s.patientHandler.UpdateAnalysis)
-		patients.DELETE("/:id/analyses/:analysisId", doctorOnly, s.patientHandler.DeleteAnalysis)
+		patients.POST("/:id/analyses", medcardWrite, s.patientHandler.CreateAnalysis)
+		patients.PATCH("/:id/analyses/:analysisId", medcardWrite, s.patientHandler.UpdateAnalysis)
+		patients.DELETE("/:id/analyses/:analysisId", medcardWrite, s.patientHandler.DeleteAnalysis)
 
-		patients.POST("/:id/visits", doctorOnly, s.patientHandler.CreateVisit)
-		patients.PATCH("/:id/visits/:visitId", doctorOnly, s.patientHandler.UpdateVisit)
-		patients.DELETE("/:id/visits/:visitId", doctorOnly, s.patientHandler.DeleteVisit)
+		patients.POST("/:id/visits", medcardWrite, s.patientHandler.CreateVisit)
+		patients.PATCH("/:id/visits/:visitId", medcardWrite, s.patientHandler.UpdateVisit)
+		patients.DELETE("/:id/visits/:visitId", medcardWrite, s.patientHandler.DeleteVisit)
 
-		patients.POST("/:id/prescriptions", doctorOnly, s.patientHandler.CreatePrescription)
-		patients.PATCH("/:id/prescriptions/:prescriptionId", doctorOnly, s.patientHandler.UpdatePrescription)
-		patients.DELETE("/:id/prescriptions/:prescriptionId", doctorOnly, s.patientHandler.DeletePrescription)
+		patients.POST("/:id/prescriptions", medcardWrite, s.patientHandler.CreatePrescription)
+		patients.PATCH("/:id/prescriptions/:prescriptionId", medcardWrite, s.patientHandler.UpdatePrescription)
+		patients.DELETE("/:id/prescriptions/:prescriptionId", medcardWrite, s.patientHandler.DeletePrescription)
 
 		patients.GET("/:id", s.patientHandler.GetByID)
 	}
@@ -86,6 +86,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	{
 		adminGroup.GET("/dashboard", s.adminHandler.Dashboard)
 		adminGroup.POST("/catalog/diseases", s.adminHandler.CreateCatalogDisease)
+		adminGroup.PATCH("/catalog/diseases/:id", s.adminHandler.UpdateCatalogDisease)
+		adminGroup.DELETE("/catalog/diseases/:id", s.adminHandler.DeleteCatalogDisease)
 		adminGroup.POST("/patients", s.adminHandler.CreatePatient)
 		adminGroup.PATCH("/patients/:id", s.adminHandler.UpdatePatient)
 		adminGroup.DELETE("/patients/:id", s.adminHandler.DeletePatient)

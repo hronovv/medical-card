@@ -146,22 +146,29 @@
 }
 
 .mc-island--nested {
-  margin-bottom: 1rem;
-  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  padding: 1.35rem 1.5rem;
   background: rgba(16, 185, 129, 0.04);
 }
 
 .mc-disease-editor__title {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.mc-disease-editor .mc-readonly-hint {
+  margin-bottom: 1.25rem;
 }
 
 .mc-disease-editor__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
+  gap: 1rem 1.25rem;
+}
+
+.mc-disease-editor .mc-field {
+  gap: 0.5rem;
 }
 
 @media (max-width: 640px) {
@@ -173,7 +180,14 @@
 .mc-disease-editor__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--mc-border-soft);
+}
+
+.mc-disease-editor + .mc-island__head {
+  margin-top: 0.25rem;
 }
 
 .mc-island__head {
@@ -627,6 +641,36 @@
 
 .mc-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.mc-table--patients .mc-col-birth {
+  width: 7.5rem;
+}
+
+.mc-table--patients .mc-col-therapist {
+  width: auto;
+  min-width: 18rem;
+}
+
+.mc-table--patients .mc-col-actions {
+  width: 9.5rem;
+}
+
+.mc-table__cell--therapist {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.mc-table__therapist-select {
+  display: inline-block;
+  width: auto;
+  min-width: 16rem;
+  max-width: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 1rem;
 }
 
 .mc-actions {
@@ -1457,6 +1501,20 @@ a.mc-btn {
   margin: 0 0 1rem;
 }
 
+.mc-form-messages__error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--mc-radius-sm);
+  background: var(--mc-danger-bg);
+  color: var(--mc-danger);
+  font-size: 0.875rem;
+  border: 1px solid #fecaca;
+}
+
+.mc-form-messages--modal {
+  margin: 0;
+}
+
 .mc-page-messages {
   margin-bottom: var(--mc-gap);
 }
@@ -1651,6 +1709,16 @@ a.mc-btn {
   margin-top: 0;
 }
 
+.mc-admin-card-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-gap);
+}
+
+.mc-admin-card-view__back {
+  align-self: flex-start;
+}
+
 .mc-form--inline {
   display: flex;
   flex-wrap: wrap;
@@ -1686,9 +1754,167 @@ a.mc-btn {
 
 .mc-appt-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.mc-table--appointments .mc-col-actions,
+.mc-table--appointments .mc-table__actions {
+  width: 9.5rem;
+  white-space: nowrap;
+}
+
+.mc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+  animation: mc-modal-backdrop-in 0.2s ease;
+}
+
+.mc-modal {
+  width: min(100%, 32rem);
+  max-height: calc(100vh - 2.5rem);
+  overflow: auto;
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border-soft);
+  border-radius: calc(var(--mc-radius) + 2px);
+  box-shadow:
+    0 24px 48px rgba(15, 23, 42, 0.18),
+    0 8px 20px rgba(15, 23, 42, 0.1);
+  animation: mc-modal-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mc-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.1rem 0.85rem;
+  border-bottom: 1px solid var(--mc-border-soft);
+}
+
+.mc-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.mc-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mc-modal__close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mc-modal__close:hover {
+  background: var(--mc-border-soft);
+  color: var(--mc-text);
+}
+
+.mc-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.mc-modal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  border-radius: var(--mc-radius-sm);
+  background: var(--mc-primary-light);
+  border: 1px solid var(--mc-primary-muted);
+}
+
+.mc-modal-meta__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.mc-modal-meta__row span {
+  color: var(--mc-text-muted);
+}
+
+.mc-modal-meta__row strong {
+  color: var(--mc-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+.mc-modal-meta__comment {
+  margin: 0.25rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--mc-border-soft);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--mc-text-muted);
+}
+
+.mc-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.mc-modal-form .mc-field {
+  gap: 0.5rem;
+}
+
+.mc-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--mc-border-soft);
+}
+
+@keyframes mc-modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mc-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .mc-field__input--sm {
@@ -1700,4 +1926,154 @@ a.mc-btn {
 .mc-btn--sm {
   padding: 0.35rem 0.65rem;
   font-size: 0.8rem;
+}
+
+/* --- Toast notifications --- */
+.mc-toast-viewport {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: min(21rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.mc-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 0.75rem 0.875rem 0.875rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 8px 24px rgba(15, 23, 42, 0.12),
+    0 24px 48px rgba(15, 23, 42, 0.08);
+  pointer-events: auto;
+  animation: mc-toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mc-toast--error {
+  border-left: 4px solid #ef4444;
+  padding-left: 0.75rem;
+}
+
+.mc-toast--success {
+  border-left: 4px solid var(--mc-primary);
+  padding-left: 0.75rem;
+}
+
+.mc-toast--info {
+  border-left: 4px solid var(--mc-doctor);
+  padding-left: 0.75rem;
+}
+
+.mc-toast__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-top: 0.05rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.mc-toast--error .mc-toast__icon-wrap {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mc-toast--success .mc-toast__icon-wrap {
+  background: var(--mc-primary-light);
+  color: var(--mc-primary-dark);
+}
+
+.mc-toast--info .mc-toast__icon-wrap {
+  background: #ecfeff;
+  color: #0e7490;
+}
+
+.mc-toast__icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.mc-toast__message {
+  flex: 1;
+  min-width: 0;
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.mc-toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mc-toast__close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mc-toast__close:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+@keyframes mc-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .mc-toast-viewport {
+    top: auto;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    width: auto;
+  }
+
+  .mc-toast {
+    animation-name: mc-toast-in-mobile;
+  }
+
+  @keyframes mc-toast-in-mobile {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

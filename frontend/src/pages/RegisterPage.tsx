@@ -3,9 +3,11 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { AuthPageShell } from '../components/AuthPageShell'
 import { PasswordInput } from '../components/PasswordInput'
 import { roleHomePathFor, useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 export function RegisterPage() {
   const { register, user, isBootstrapping } = useAuth()
+  const { pushError } = useToast()
   const navigate = useNavigate()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -13,7 +15,6 @@ export function RegisterPage() {
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   if (!isBootstrapping && user) {
@@ -22,10 +23,9 @@ export function RegisterPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError(null)
 
     if (password !== confirmPassword) {
-      setError('Пароли не совпадают')
+      pushError('Пароли не совпадают')
       return
     }
 
@@ -34,7 +34,7 @@ export function RegisterPage() {
       const session = await register(fullName, email, password, birthDate, phone)
       navigate(roleHomePathFor(session.role), { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось зарегистрироваться')
+      pushError(err instanceof Error ? err.message : 'Не удалось зарегистрироваться')
     } finally {
       setLoading(false)
     }
@@ -55,12 +55,6 @@ export function RegisterPage() {
       }
     >
       <form className="mc-auth-form mc-auth-form--register" onSubmit={handleSubmit} noValidate>
-        {error && (
-          <p className="mc-auth-form__error" role="alert">
-            {error}
-          </p>
-        )}
-
         <label className="mc-field">
           <span className="mc-field__label">ФИО</span>
           <input

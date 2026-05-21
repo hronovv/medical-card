@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { FormMessages } from '../components/FormMessages'
 import { Layout } from '../components/Layout'
 import { ListControls } from '../components/ListControls'
+import { PatientCardView } from '../components/PatientCardView'
 import { PasswordInput } from '../components/PasswordInput'
+import { useErrorToast } from '../hooks/useErrorToast'
 import { fetchDiseaseCatalog, type CatalogDisease } from '../api/catalog'
 import {
   createAdminDoctor,
   createAdminPatient,
   createCatalogDisease,
+  deleteCatalogDisease,
   deleteAdminDoctor,
   deleteAdminPatient,
   fetchAdminDashboard,
   updateAdminDoctor,
   updateAdminPatient,
+  updateCatalogDisease,
   updatePatientAssignment,
   type AdminDashboard,
   type DoctorListItem,
@@ -21,6 +25,14 @@ import type { PatientListItem } from '../api/patient'
 import { ApiError } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { DEFAULT_LIST_LIMIT, type PaginationMeta } from '../types/pagination'
+import {
+  BIRTH_DATE_MIN_ISO,
+  birthDateISOForApi,
+  ddmmyyyyToISO,
+  todayISO,
+  validateBirthDateISO,
+} from '../utils/date'
+import { useToast } from '../context/ToastContext'
 
 const emptyPagination = (page = 1, limit = DEFAULT_LIST_LIMIT): PaginationMeta => ({
   page,
@@ -72,6 +84,7 @@ function AdminFormPanel({
 
 export function AdminPage() {
   const { user } = useAuth()
+  const { pushError } = useToast()
   const [data, setData] = useState<AdminDashboard | null>(null)
   const [catalog, setCatalog] = useState<CatalogDisease[]>([])
   const [catalogPagination, setCatalogPagination] = useState<PaginationMeta>(() => emptyPagination())
@@ -92,6 +105,9 @@ export function AdminPage() {
   const [showAddDoctor, setShowAddDoctor] = useState(false)
   const [editDoctorId, setEditDoctorId] = useState<string | null>(null)
   const [showAddCatalog, setShowAddCatalog] = useState(false)
+  const [editCatalogId, setEditCatalogId] = useState<string | null>(null)
+  const [cardPatientId, setCardPatientId] = useState<string | null>(null)
+  const [cardPatientName, setCardPatientName] = useState('')
 
   const [pFullName, setPFullName] = useState('')
   const [pEmail, setPEmail] = useState('')
@@ -173,8 +189,17 @@ export function AdminPage() {
 
   function clearCatalogForm() {
     setShowAddCatalog(false)
+    setEditCatalogId(null)
     setCatName('')
     setCatCode('')
+  }
+
+  function startEditCatalog(row: CatalogDisease) {
+    clearPatientForm()
+    clearDoctorForm()
+    setEditCatalogId(row.id)
+    setCatName(row.name)
+    setCatCode(row.code)
   }
 
   async function runAction(fn: () => Promise<void>) {
@@ -222,7 +247,7 @@ export function AdminPage() {
     setEditPatientId(p.id)
     setPFullName(p.fullName)
     setPEmail(p.email ?? '')
-    setPBirthDate(p.birthDate ?? '')
+    setPBirthDate(ddmmyyyyToISO(p.birthDate ?? ''))
     setPPhone(p.phone ?? '')
   }
 
@@ -232,10 +257,28 @@ export function AdminPage() {
     setEditDoctorId(d.id)
     setDFullName(d.fullName)
     setDEmail(d.email)
-    setDBirthDate(d.birthDate)
+    setDBirthDate(ddmmyyyyToISO(d.birthDate))
     setDPhone(d.phone)
     setDSpecialty(d.specialty)
   }
+
+  function requireBirthDateISO(iso: string): string {
+    const err = validateBirthDateISO(iso)
+    if (err) {
+      pushError(err)
+      throw new ApiError(err, 400)
+    }
+    return birthDateISOForApi(iso)
+  }
+
+  useErrorToast(error && !data ? error : null)
+
+  const therapistSelectWidthCh = useMemo(() => {
+    const therapists = data?.therapists ?? []
+    const labels = ['Не назначен', ...therapists.map((d) => d.fullName)]
+    const longest = labels.reduce((max, label) => Math.max(max, label.length), 0)
+    return longest + 4
+  }, [data?.therapists])
 
   if (loading) {
     return (
@@ -248,7 +291,7 @@ export function AdminPage() {
   if (error && !data) {
     return (
       <Layout role="admin" title="Панель администратора">
-        <p className="mc-auth-form__error">{error}</p>
+        <p className="mc-readonly-hint">Не удалось загрузить панель. Обновите страницу.</p>
       </Layout>
     )
   }
@@ -256,7 +299,27 @@ export function AdminPage() {
   if (!data) {
     return (
       <Layout role="admin" title="Панель администратора">
-        <p className="mc-auth-form__error">Нет данных</p>
+        <p className="mc-readonly-hint">Нет данных</p>
+      </Layout>
+    )
+  }
+
+  if (cardPatientId) {
+    return (
+      <Layout role="admin" title={`Медкарта — ${cardPatientName}`}>
+        <div className="mc-admin-card-view">
+          <button
+            type="button"
+            className="mc-back mc-admin-card-view__back"
+            onClick={() => {
+              setCardPatientId(null)
+              setCardPatientName('')
+            }}
+          >
+            ← К панели администратора
+          </button>
+          <PatientCardView key={cardPatientId} editable patientId={cardPatientId} />
+        </div>
       </Layout>
     )
   }
@@ -313,7 +376,7 @@ export function AdminPage() {
                     email: pEmail.trim(),
                     password: pPassword,
                     confirmPassword: pConfirm,
-                    birthDate: pBirthDate.trim(),
+                    birthDate: requireBirthDateISO(pBirthDate),
                     phone: pPhone.trim(),
                   })
                   clearPatientForm()
@@ -330,8 +393,16 @@ export function AdminPage() {
                   <input className="mc-field__input" value={pEmail} onChange={(e) => setPEmail(e.target.value)} />
                 </label>
                 <label className="mc-field">
-                  <span className="mc-field__label">Дата рождения (ДД.ММ.ГГГГ)</span>
-                  <input className="mc-field__input" value={pBirthDate} onChange={(e) => setPBirthDate(e.target.value)} />
+                  <span className="mc-field__label">Дата рождения</span>
+                  <input
+                    className="mc-field__input"
+                    type="date"
+                    min={BIRTH_DATE_MIN_ISO}
+                    max={todayISO()}
+                    value={pBirthDate}
+                    onChange={(e) => setPBirthDate(e.target.value)}
+                    required
+                  />
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Телефон</span>
@@ -354,7 +425,7 @@ export function AdminPage() {
                   await updateAdminPatient(user.token, editPatientId, {
                     fullName: pFullName.trim(),
                     email: pEmail.trim(),
-                    birthDate: pBirthDate.trim(),
+                    birthDate: requireBirthDateISO(pBirthDate),
                     phone: pPhone.trim(),
                   })
                   clearPatientForm()
@@ -372,7 +443,15 @@ export function AdminPage() {
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Дата рождения</span>
-                  <input className="mc-field__input" value={pBirthDate} onChange={(e) => setPBirthDate(e.target.value)} />
+                  <input
+                    className="mc-field__input"
+                    type="date"
+                    min={BIRTH_DATE_MIN_ISO}
+                    max={todayISO()}
+                    value={pBirthDate}
+                    onChange={(e) => setPBirthDate(e.target.value)}
+                    required
+                  />
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Телефон</span>
@@ -394,7 +473,14 @@ export function AdminPage() {
           />
 
           <div className="mc-table-wrap">
-            <table className="mc-table">
+            <table className="mc-table mc-table--patients">
+              <colgroup>
+                <col />
+                <col className="mc-col-birth" />
+                <col />
+                <col className="mc-col-therapist" />
+                <col className="mc-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>ФИО</th>
@@ -417,9 +503,10 @@ export function AdminPage() {
                       <td>{p.fullName}</td>
                       <td>{p.birthDate}</td>
                       <td>{p.email}</td>
-                      <td>
+                      <td className="mc-table__cell--therapist">
                         <select
-                          className="mc-field__input"
+                          className="mc-field__input mc-table__therapist-select"
+                          style={{ width: `${therapistSelectWidthCh}ch` }}
                           value={p.assignedDoctorId ?? ''}
                           disabled={assigningId === p.id || busy}
                           onChange={(e) => handleAssignmentChange(p.id, e.target.value)}
@@ -434,6 +521,17 @@ export function AdminPage() {
                       </td>
                       <td>
                         <div className="mc-actions">
+                          <button
+                            type="button"
+                            className="mc-btn mc-btn--primary mc-btn--sm"
+                            disabled={busy}
+                            onClick={() => {
+                              setCardPatientId(p.id)
+                              setCardPatientName(p.fullName)
+                            }}
+                          >
+                            Карта
+                          </button>
                           <button
                             type="button"
                             className="mc-btn mc-btn--ghost mc-btn--sm"
@@ -495,7 +593,7 @@ export function AdminPage() {
                     email: dEmail.trim(),
                     password: dPassword,
                     confirmPassword: dConfirm,
-                    birthDate: dBirthDate.trim(),
+                    birthDate: requireBirthDateISO(dBirthDate),
                     phone: dPhone.trim(),
                     specialty: dSpecialty.trim(),
                   })
@@ -518,7 +616,15 @@ export function AdminPage() {
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Дата рождения</span>
-                  <input className="mc-field__input" value={dBirthDate} onChange={(e) => setDBirthDate(e.target.value)} />
+                  <input
+                    className="mc-field__input"
+                    type="date"
+                    min={BIRTH_DATE_MIN_ISO}
+                    max={todayISO()}
+                    value={dBirthDate}
+                    onChange={(e) => setDBirthDate(e.target.value)}
+                    required
+                  />
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Телефон</span>
@@ -541,7 +647,7 @@ export function AdminPage() {
                   await updateAdminDoctor(user.token, editDoctorId, {
                     fullName: dFullName.trim(),
                     email: dEmail.trim(),
-                    birthDate: dBirthDate.trim(),
+                    birthDate: requireBirthDateISO(dBirthDate),
                     phone: dPhone.trim(),
                     specialty: dSpecialty.trim(),
                   })
@@ -564,7 +670,15 @@ export function AdminPage() {
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Дата рождения</span>
-                  <input className="mc-field__input" value={dBirthDate} onChange={(e) => setDBirthDate(e.target.value)} />
+                  <input
+                    className="mc-field__input"
+                    type="date"
+                    min={BIRTH_DATE_MIN_ISO}
+                    max={todayISO()}
+                    value={dBirthDate}
+                    onChange={(e) => setDBirthDate(e.target.value)}
+                    required
+                  />
                 </label>
                 <label className="mc-field">
                   <span className="mc-field__label">Телефон</span>
@@ -685,6 +799,35 @@ export function AdminPage() {
             </AdminFormPanel>
           )}
 
+          {editCatalogId && (
+            <AdminFormPanel
+              title="Изменить запись МКБ"
+              busy={busy}
+              onCancel={clearCatalogForm}
+              onSave={() =>
+                void runAction(async () => {
+                  if (!user?.token || !editCatalogId) return
+                  await updateCatalogDisease(user.token, editCatalogId, {
+                    name: catName.trim(),
+                    code: catCode.trim(),
+                  })
+                  clearCatalogForm()
+                })
+              }
+            >
+              <div className="mc-disease-editor__grid">
+                <label className="mc-field">
+                  <span className="mc-field__label">Название</span>
+                  <input className="mc-field__input" value={catName} onChange={(e) => setCatName(e.target.value)} />
+                </label>
+                <label className="mc-field">
+                  <span className="mc-field__label">Код МКБ</span>
+                  <input className="mc-field__input" value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="I10" />
+                </label>
+              </div>
+            </AdminFormPanel>
+          )}
+
           <ListControls
             q={catalogQ}
             onQChange={(value) => {
@@ -702,12 +845,13 @@ export function AdminPage() {
                 <tr>
                   <th>Код</th>
                   <th>Название</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {catalog.length === 0 ? (
                   <tr>
-                    <td colSpan={2} className="mc-table__empty">
+                    <td colSpan={3} className="mc-table__empty">
                       {catalogQ.trim() ? 'Записей не найдено' : 'Справочник пуст'}
                     </td>
                   </tr>
@@ -716,6 +860,35 @@ export function AdminPage() {
                     <tr key={row.id}>
                       <td>{row.code}</td>
                       <td>{row.name}</td>
+                      <td>
+                        <div className="mc-actions">
+                          <button
+                            type="button"
+                            className="mc-btn mc-btn--ghost mc-btn--sm"
+                            disabled={busy}
+                            onClick={() => startEditCatalog(row)}
+                          >
+                            Изменить
+                          </button>
+                          <button
+                            type="button"
+                            className="mc-btn mc-btn--danger mc-btn--sm"
+                            disabled={busy}
+                            onClick={() =>
+                              void runAction(async () => {
+                                if (!user?.token) return
+                                const msg =
+                                  `Удалить «${row.code} — ${row.name}» из справочника?\n\n` +
+                                  'Все диагнозы пациентов, связанные с этой записью, тоже будут удалены.'
+                                if (!window.confirm(msg)) return
+                                await deleteCatalogDisease(user.token, row.id)
+                              })
+                            }
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}

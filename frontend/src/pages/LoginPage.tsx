@@ -3,15 +3,16 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthPageShell } from '../components/AuthPageShell'
 import { PasswordInput } from '../components/PasswordInput'
 import { roleHomePathFor, useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 export function LoginPage() {
   const { login, user, isBootstrapping } = useAuth()
+  const { pushError } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   if (!isBootstrapping && user) {
@@ -20,14 +21,13 @@ export function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError(null)
     setLoading(true)
     try {
       const session = await login(email, password)
       const target = from && from !== '/login' ? from : roleHomePathFor(session.role)
       navigate(target, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось войти')
+      pushError(err instanceof Error ? err.message : 'Не удалось войти')
     } finally {
       setLoading(false)
     }
@@ -47,12 +47,6 @@ export function LoginPage() {
       }
     >
       <form className="mc-auth-form" onSubmit={handleSubmit} noValidate>
-        {error && (
-          <p className="mc-auth-form__error" role="alert">
-            {error}
-          </p>
-        )}
-
         <label className="mc-field">
           <span className="mc-field__label">Email</span>
           <input

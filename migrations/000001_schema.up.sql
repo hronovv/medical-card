@@ -31,7 +31,7 @@ CREATE TABLE disease_catalog (
 CREATE TABLE patient_diseases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    catalog_id UUID REFERENCES disease_catalog (id) ON DELETE SET NULL,
+    catalog_id UUID REFERENCES disease_catalog (id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     code TEXT,
     diagnosed_at DATE,

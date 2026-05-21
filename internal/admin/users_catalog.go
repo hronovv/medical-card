@@ -58,6 +58,60 @@ func (h *Handler) CreateCatalogDisease(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"disease": item})
 }
 
+type updateCatalogRequest struct {
+	Name *string `json:"name"`
+	Code *string `json:"code"`
+}
+
+func (h *Handler) UpdateCatalogDisease(c *gin.Context) {
+	id := c.Param("id")
+	var req updateCatalogRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректные данные"})
+		return
+	}
+	if req.Name == nil && req.Code == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Укажите name и/или code"})
+		return
+	}
+	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Пустое название МКБ"})
+		return
+	}
+	if req.Code != nil && strings.TrimSpace(*req.Code) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Пустой код МКБ"})
+		return
+	}
+
+	item, err := h.catalog.Update(c.Request.Context(), id, req.Name, req.Code)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrCatalogDiseaseNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "Запись справочника не найдена"})
+		case errors.Is(err, repository.ErrCatalogCodeTaken):
+			c.JSON(http.StatusConflict, gin.H{"error": "Код МКБ уже есть в справочнике"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"disease": item})
+}
+
+func (h *Handler) DeleteCatalogDisease(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.catalog.Delete(c.Request.Context(), id); err != nil {
+		if errors.Is(err, repository.ErrCatalogDiseaseNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Запись справочника не найдена"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
 type createPatientRequest struct {
 	FullName        string `json:"fullName" binding:"required"`
 	Email           string `json:"email" binding:"required,email"`

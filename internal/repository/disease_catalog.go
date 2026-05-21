@@ -77,3 +77,76 @@ func (r *DiseaseCatalogRepository) Create(ctx context.Context, name, code string
 	}
 	return &item, nil
 }
+
+func (r *DiseaseCatalogRepository) Update(ctx context.Context, id string, name, code *string) (*DiseaseCatalogItem, error) {
+	existing, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	newName := existing.Name
+	newCode := existing.Code
+	if name != nil {
+		trimmed := strings.TrimSpace(*name)
+		if trimmed == "" {
+			return nil, errors.New("empty catalog name")
+		}
+		newName = trimmed
+	}
+	if code != nil {
+		trimmed := strings.TrimSpace(*code)
+		if trimmed == "" {
+			return nil, errors.New("empty catalog code")
+		}
+		newCode = trimmed
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var item DiseaseCatalogItem
+	err = tx.QueryRowContext(ctx, `
+		UPDATE disease_catalog
+		SET name = $1, code = $2
+		WHERE id = $3
+		RETURNING id::text, name, code
+	`, newName, newCode, id).Scan(&item.ID, &item.Name, &item.Code)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return nil, ErrCatalogCodeTaken
+		}
+		return nil, err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE patient_diseases
+		SET name = $1, code = $2
+		WHERE catalog_id = $3
+	`, newName, newCode, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *DiseaseCatalogRepository) Delete(ctx context.Context, id string) error {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM disease_catalog WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrCatalogDiseaseNotFound
+	}
+	return nil
+}

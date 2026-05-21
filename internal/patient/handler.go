@@ -204,7 +204,7 @@ type patchDiseaseRequest struct {
 
 func (h *Handler) CreateDisease(c *gin.Context) {
 	patientID := c.Param("id")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 
@@ -246,7 +246,7 @@ func (h *Handler) CreateDisease(c *gin.Context) {
 func (h *Handler) UpdateDisease(c *gin.Context) {
 	patientID := c.Param("id")
 	diseaseID := c.Param("diseaseId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 
@@ -329,7 +329,7 @@ func (h *Handler) UpdateDisease(c *gin.Context) {
 func (h *Handler) DeleteDisease(c *gin.Context) {
 	patientID := c.Param("id")
 	diseaseID := c.Param("diseaseId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 
@@ -345,13 +345,33 @@ func (h *Handler) DeleteDisease(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
 
-func (h *Handler) ensureDoctorPatient(c *gin.Context, patientID string) bool {
-	if c.GetString(middleware.ContextRoleKey) != string(models.RoleDoctor) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Только врач может изменять медкарту"})
+func (h *Handler) ensureMedcardWriteAccess(c *gin.Context, patientID string) bool {
+	ctx := c.Request.Context()
+	role := c.GetString(middleware.ContextRoleKey)
+
+	if role == string(models.RoleAdmin) {
+		user, err := h.users.GetByID(ctx, patientID)
+		if err != nil {
+			if errors.Is(err, repository.ErrUserNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Пациент не найден"})
+				return false
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+			return false
+		}
+		if user.Role != models.RolePatient {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Пациент не найден"})
+			return false
+		}
+		return true
+	}
+
+	if role != string(models.RoleDoctor) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Недостаточно прав"})
 		return false
 	}
 	doctorID := c.GetString(middleware.ContextUserIDKey)
-	ok, err := h.users.DoctorCanAccessPatient(c.Request.Context(), doctorID, patientID)
+	ok, err := h.users.DoctorCanAccessPatient(ctx, doctorID, patientID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
 		return false
@@ -361,6 +381,14 @@ func (h *Handler) ensureDoctorPatient(c *gin.Context, patientID string) bool {
 		return false
 	}
 	return true
+}
+
+func (h *Handler) canEditVisit(c *gin.Context, patientID string, v *repository.VisitRecord) bool {
+	if c.GetString(middleware.ContextRoleKey) == string(models.RoleAdmin) {
+		return true
+	}
+	doctorID := c.GetString(middleware.ContextUserIDKey)
+	return h.doctorCanEditVisit(c.Request.Context(), doctorID, patientID, v)
 }
 
 func parseDiagnosedDatePtr(s *string) (*time.Time, error) {

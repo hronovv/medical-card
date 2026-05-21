@@ -24,6 +24,7 @@ import { fetchDiseaseCatalog, type CatalogDisease } from '../api/catalog'
 import { ApiError } from '../api/client'
 import { ListControls } from './ListControls'
 import { FormMessages } from './FormMessages'
+import { useErrorToast } from '../hooks/useErrorToast'
 import { useClientList } from '../hooks/useClientList'
 import { useAuth } from '../context/AuthContext'
 
@@ -191,7 +192,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
 
   useEffect(() => {
     if (!editable || tab !== 'diseases' || !user?.token || !patientId) return
-    if (user.role !== 'doctor') return
+    if (user.role !== 'doctor' && user.role !== 'admin') return
 
     let cancelled = false
     setCatalogErr(null)
@@ -258,21 +259,28 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
   const showAssignedTherapist =
     user?.role === 'patient' && !patientId
 
+  useErrorToast(error)
+
   if (isBootstrapping || (loading && user?.token)) {
     return <p className="mc-readonly-hint">Загрузка карты…</p>
   }
 
   if (error || !card) {
-    return <p className="mc-auth-form__error">{error ?? 'Нет данных'}</p>
+    return <p className="mc-readonly-hint">{error ? 'Не удалось загрузить карту' : 'Нет данных'}</p>
   }
 
   const { profile, assignedDoctor, diseases, analyses, visits } = card
 
   const doctorId = user?.id ?? ''
-  const isDoctorEditor = editable && user?.role === 'doctor' && !!patientId
+  const isMedcardEditor =
+    editable && !!patientId && (user?.role === 'doctor' || user?.role === 'admin')
   const canEditVisitRow = (v: PatientVisit) =>
-    isDoctorEditor && canDoctorEditVisit(v, doctorId, assignedDoctor?.id)
-  const visitsShowActionsColumn = visits.some(canEditVisitRow)
+    isMedcardEditor &&
+    (user?.role === 'admin' || canDoctorEditVisit(v, doctorId, assignedDoctor?.id))
+  const visitsShowActionsColumn =
+    isMedcardEditor &&
+    (user?.role === 'admin' ||
+      visits.some((v) => canDoctorEditVisit(v, doctorId, assignedDoctor?.id)))
 
   async function handleCreateDisease() {
     if (!user?.token || !patientId) return
@@ -478,7 +486,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
 
         {tab === 'diseases' && (
           <>
-            {editable && user?.role === 'doctor' && patientId && (
+            {isMedcardEditor && (
               <>
                 <FormMessages errors={[catalogErr, diseaseFormErr]} />
                 {showAddDisease && (
@@ -616,7 +624,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
             )}
             <TableSection
               title="Болезни"
-              editable={editable && user?.role === 'doctor' && !!patientId}
+              editable={isMedcardEditor}
               addLabel="+ Добавить"
               onAddClick={() => {
                 setDiseaseFormErr(null)
@@ -641,7 +649,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <th>Название</th>
                   <th>Код МКБ</th>
                   <th>Дата постановки</th>
-                  {editable && user?.role === 'doctor' && patientId && <th>Действия</th>}
+                  {isMedcardEditor && <th>Действия</th>}
                 </>
               }
             >
@@ -650,7 +658,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <td>{d.name}</td>
                   <td>{d.code}</td>
                   <td>{d.diagnosedAt ?? '—'}</td>
-                  {editable && user?.role === 'doctor' && patientId && (
+                  {isMedcardEditor && (
                     <td>
                       <div className="mc-actions">
                         <button
@@ -680,7 +688,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
 
         {tab === 'analyses' && (
           <>
-            {editable && user?.role === 'doctor' && patientId && (
+            {isMedcardEditor && (
               <>
                 <FormMessages errors={[medErr]} />
                 {showAddAnalysis && (
@@ -812,7 +820,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
             )}
             <TableSection
               title="Анализы"
-              editable={editable && user?.role === 'doctor' && !!patientId}
+              editable={isMedcardEditor}
               addLabel="+ Добавить"
               onAddClick={() => {
                 clearMedEditors()
@@ -834,7 +842,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <th>Дата</th>
                   <th>Тип</th>
                   <th>Результат</th>
-                  {editable && user?.role === 'doctor' && patientId && <th>Действия</th>}
+                  {isMedcardEditor && <th>Действия</th>}
                 </>
               }
             >
@@ -843,7 +851,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <td>{a.date}</td>
                   <td>{a.type}</td>
                   <td>{a.result}</td>
-                  {editable && user?.role === 'doctor' && patientId && (
+                  {isMedcardEditor && (
                     <td>
                       <div className="mc-actions">
                         <button
@@ -885,14 +893,16 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
 
         {tab === 'visits' && (
           <>
-            {editable && user?.role === 'doctor' && patientId && (
+            {isMedcardEditor && (
               <>
                 <FormMessages errors={[medErr]} />
                 {showAddVisit && (
                   <div className="mc-disease-editor mc-island mc-island--nested">
                     <h3 className="mc-disease-editor__title">Новый визит</h3>
-                    <p className="mc-readonly-hint" style={{ marginTop: 0 }}>
-                      Визит будет записан на вас как на принимающего врача.
+                    <p className="mc-readonly-hint">
+                      {user?.role === 'admin'
+                        ? 'Если у пациента назначен терапевт, визит будет записан на него. Иначе — от имени администратора.'
+                        : 'Визит будет записан на вас как на принимающего врача.'}
                     </p>
                     <div className="mc-disease-editor__grid">
                       <label className="mc-field">
@@ -946,10 +956,12 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                 {editVisitId && (
                   <div className="mc-disease-editor mc-island mc-island--nested">
                     <h3 className="mc-disease-editor__title">Изменить визит</h3>
-                    <p className="mc-readonly-hint" style={{ marginTop: 0 }}>
-                      Можно править только визиты, где вы указаны как принимающий врач (или старые записи
-                      терапевта по закреплённым пациентам).
-                    </p>
+                    {user?.role === 'doctor' && (
+                      <p className="mc-readonly-hint">
+                        Можно править только визиты, где вы указаны как принимающий врач (или старые записи
+                        терапевта по закреплённым пациентам).
+                      </p>
+                    )}
                     <div className="mc-disease-editor__grid">
                       <label className="mc-field">
                         <span className="mc-field__label">Дата</span>
@@ -1003,7 +1015,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
             )}
             <TableSection
               title="Посещения"
-              editable={editable && user?.role === 'doctor' && !!patientId}
+              editable={isMedcardEditor}
               addLabel="+ Новый визит"
               onAddClick={() => {
                 clearMedEditors()
@@ -1077,7 +1089,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
 
         {tab === 'prescriptions' && (
           <>
-            {editable && user?.role === 'doctor' && patientId && (
+            {isMedcardEditor && (
               <>
                 <FormMessages errors={[medErr]} />
                 {showAddRx && (
@@ -1230,7 +1242,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
             )}
             <TableSection
               title="Рецепты"
-              editable={editable && user?.role === 'doctor' && !!patientId}
+              editable={isMedcardEditor}
               addLabel="+ Рецепт"
               onAddClick={() => {
                 clearMedEditors()
@@ -1253,7 +1265,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <th>Препарат</th>
                   <th>Дозировка</th>
                   <th>Срок</th>
-                  {editable && user?.role === 'doctor' && patientId && <th>Действия</th>}
+                  {isMedcardEditor && <th>Действия</th>}
                 </>
               }
             >
@@ -1263,7 +1275,7 @@ export function PatientCardView({ editable, patientId }: PatientCardViewProps) {
                   <td>{p.drug}</td>
                   <td>{p.dosage}</td>
                   <td>{p.duration}</td>
-                  {editable && user?.role === 'doctor' && patientId && (
+                  {isMedcardEditor && (
                     <td>
                       <div className="mc-actions">
                         <button

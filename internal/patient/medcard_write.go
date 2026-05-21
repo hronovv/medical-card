@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"medical-card/internal/middleware"
+	"medical-card/internal/models"
 	"medical-card/internal/repository"
 )
 
@@ -56,7 +57,7 @@ type createAnalysisRequest struct {
 
 func (h *Handler) CreateAnalysis(c *gin.Context) {
 	patientID := c.Param("id")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req createAnalysisRequest
@@ -87,7 +88,7 @@ type patchAnalysisRequest struct {
 func (h *Handler) UpdateAnalysis(c *gin.Context) {
 	patientID := c.Param("id")
 	analysisID := c.Param("analysisId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req patchAnalysisRequest
@@ -123,7 +124,7 @@ func (h *Handler) UpdateAnalysis(c *gin.Context) {
 func (h *Handler) DeleteAnalysis(c *gin.Context) {
 	patientID := c.Param("id")
 	analysisID := c.Param("analysisId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	if err := h.cards.DeleteAnalysis(c.Request.Context(), patientID, analysisID); err != nil {
@@ -144,7 +145,7 @@ type createVisitRequest struct {
 
 func (h *Handler) CreateVisit(c *gin.Context) {
 	patientID := c.Param("id")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req createVisitRequest
@@ -157,17 +158,44 @@ func (h *Handler) CreateVisit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Дата должна быть в формате ДД.ММ.ГГГГ"})
 		return
 	}
-	doctorID := c.GetString(middleware.ContextUserIDKey)
-	doc, err := h.users.GetByID(c.Request.Context(), doctorID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
-		return
+	ctx := c.Request.Context()
+	role := c.GetString(middleware.ContextRoleKey)
+	userID := c.GetString(middleware.ContextUserIDKey)
+
+	var conductingID string
+	var doctorName string
+
+	if role == string(models.RoleAdmin) {
+		assigned, err := h.users.GetAssignedDoctor(ctx, patientID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+			return
+		}
+		if assigned != nil {
+			conductingID = assigned.ID
+			doctorName = doctorAbbrevName(assigned.FullName)
+		} else {
+			adminUser, err := h.users.GetByID(ctx, userID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+				return
+			}
+			doctorName = "Админ: " + doctorAbbrevName(adminUser.FullName)
+		}
+	} else {
+		doc, err := h.users.GetByID(ctx, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+			return
+		}
+		conductingID = userID
+		doctorName = doctorAbbrevName(doc.FullName)
 	}
 	notes := ""
 	if req.Notes != nil {
 		notes = *req.Notes
 	}
-	rec, err := h.cards.CreateVisit(c.Request.Context(), patientID, d, doctorAbbrevName(doc.FullName), notes, doctorID)
+	rec, err := h.cards.CreateVisit(ctx, patientID, d, doctorName, notes, conductingID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
 		return
@@ -183,7 +211,7 @@ type patchVisitRequest struct {
 func (h *Handler) UpdateVisit(c *gin.Context) {
 	patientID := c.Param("id")
 	visitID := c.Param("visitId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req patchVisitRequest
@@ -205,8 +233,7 @@ func (h *Handler) UpdateVisit(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
 		return
 	}
-	doctorID := c.GetString(middleware.ContextUserIDKey)
-	if !h.doctorCanEditVisit(ctx, doctorID, patientID, v) {
+	if !h.canEditVisit(c, patientID, v) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Редактировать можно только свой приём"})
 		return
 	}
@@ -234,7 +261,7 @@ func (h *Handler) UpdateVisit(c *gin.Context) {
 func (h *Handler) DeleteVisit(c *gin.Context) {
 	patientID := c.Param("id")
 	visitID := c.Param("visitId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	ctx := c.Request.Context()
@@ -247,8 +274,7 @@ func (h *Handler) DeleteVisit(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
 		return
 	}
-	doctorID := c.GetString(middleware.ContextUserIDKey)
-	if !h.doctorCanEditVisit(ctx, doctorID, patientID, v) {
+	if !h.canEditVisit(c, patientID, v) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Удалить можно только свой приём"})
 		return
 	}
@@ -272,7 +298,7 @@ type createPrescriptionRequest struct {
 
 func (h *Handler) CreatePrescription(c *gin.Context) {
 	patientID := c.Param("id")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req createPrescriptionRequest
@@ -312,7 +338,7 @@ type patchPrescriptionRequest struct {
 func (h *Handler) UpdatePrescription(c *gin.Context) {
 	patientID := c.Param("id")
 	rxID := c.Param("prescriptionId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	var req patchPrescriptionRequest
@@ -353,7 +379,7 @@ func (h *Handler) UpdatePrescription(c *gin.Context) {
 func (h *Handler) DeletePrescription(c *gin.Context) {
 	patientID := c.Param("id")
 	rxID := c.Param("prescriptionId")
-	if !h.ensureDoctorPatient(c, patientID) {
+	if !h.ensureMedcardWriteAccess(c, patientID) {
 		return
 	}
 	if err := h.cards.DeletePrescription(c.Request.Context(), patientID, rxID); err != nil {

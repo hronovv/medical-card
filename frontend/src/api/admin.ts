@@ -154,3 +154,22 @@ export function createCatalogDisease(token: string, body: { name: string; code: 
     token,
   })
 }
+
+export function updateCatalogDisease(
+  token: string,
+  diseaseId: string,
+  body: { name?: string; code?: string },
+) {
+  return apiRequest<{ disease: CatalogDisease }>(`/admin/catalog/diseases/${diseaseId}`, {
+    method: 'PATCH',
+    body,
+    token,
+  })
+}
+
+export function deleteCatalogDisease(token: string, diseaseId: string) {
+  return apiRequest<{ message: string }>(`/admin/catalog/diseases/${diseaseId}`, {
+    method: 'DELETE',
+    token,
+  })
+}

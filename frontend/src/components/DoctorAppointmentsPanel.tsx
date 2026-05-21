@@ -9,6 +9,7 @@ import {
 import { ApiError } from '../api/client'
 import { FormMessages } from '../components/FormMessages'
 import { ListControls } from '../components/ListControls'
+import { Modal } from '../components/Modal'
 import { useAuth } from '../context/AuthContext'
 import { validateAppointmentDate } from '../utils/date'
 import { DEFAULT_LIST_LIMIT, type PaginationMeta } from '../types/pagination'
@@ -31,7 +32,9 @@ export function DoctorAppointmentsPanel() {
   const [page, setPage] = useState(1)
   const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [modalError, setModalError] = useState<string | null>(null)
   const [actionId, setActionId] = useState<string | null>(null)
+  const [approveTarget, setApproveTarget] = useState<Appointment | null>(null)
   const [approveNotes, setApproveNotes] = useState<Record<string, string>>({})
   const [approveDates, setApproveDates] = useState<Record<string, string>>({})
 
@@ -60,26 +63,45 @@ export function DoctorAppointmentsPanel() {
 
   useEffect(() => {
     setPage(1)
+    setApproveTarget(null)
   }, [filter])
 
-  async function handleApprove(id: string, preferredDate: string) {
-    if (!user?.token) return
+  function openApproveModal(appointment: Appointment) {
+    setModalError(null)
+    setApproveTarget(appointment)
+    setApproveDates((prev) => ({
+      ...prev,
+      [appointment.id]: prev[appointment.id] || appointment.preferredDate,
+    }))
+  }
+
+  function closeApproveModal() {
+    if (actionId) return
+    setModalError(null)
+    setApproveTarget(null)
+  }
+
+  async function handleApprove() {
+    if (!user?.token || !approveTarget) return
+    const id = approveTarget.id
+    const preferredDate = approveTarget.preferredDate
     const visitDate = approveDates[id] || preferredDate
     const dateErr = validateAppointmentDate(visitDate)
     if (dateErr) {
-      setError(dateErr)
+      setModalError(dateErr)
       return
     }
     setActionId(id)
-    setError(null)
+    setModalError(null)
     try {
       await approveAppointment(user.token, id, {
         visitDate,
         notes: approveNotes[id]?.trim() || undefined,
       })
+      setApproveTarget(null)
       await load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось принять заявку')
+      setModalError(err instanceof ApiError ? err.message : 'Не удалось принять заявку')
     } finally {
       setActionId(null)
     }
@@ -87,7 +109,9 @@ export function DoctorAppointmentsPanel() {
 
   async function handleReject(id: string) {
     if (!user?.token) return
+    if (!window.confirm('Отклонить заявку на приём?')) return
     setActionId(id)
+    setApproveTarget(null)
     try {
       await rejectAppointment(user.token, id)
       await load()
@@ -97,6 +121,8 @@ export function DoctorAppointmentsPanel() {
       setActionId(null)
     }
   }
+
+  const modalBusy = approveTarget ? actionId === approveTarget.id : false
 
   return (
     <section className="mc-island mc-appointments">
@@ -144,9 +170,9 @@ export function DoctorAppointmentsPanel() {
         </p>
       )}
 
-      {!initialLoading && !error && appointments.length > 0 && (
+      {!initialLoading && appointments.length > 0 && (
         <div className="mc-table-wrap">
-          <table className="mc-table">
+          <table className="mc-table mc-table--appointments">
             <thead>
               <tr>
                 <th>Пациент</th>
@@ -154,7 +180,7 @@ export function DoctorAppointmentsPanel() {
                 <th>Создана</th>
                 <th>Статус</th>
                 <th>Комментарий</th>
-                {filter === 'pending' && <th>Действия</th>}
+                {filter === 'pending' && <th className="mc-col-actions">Действия</th>}
               </tr>
             </thead>
             <tbody>
@@ -173,30 +199,11 @@ export function DoctorAppointmentsPanel() {
                     <td className="mc-table__actions">
                       {a.status === 'pending' ? (
                         <div className="mc-appt-actions">
-                          <input
-                            className="mc-field__input mc-field__input--sm"
-                            type="text"
-                            placeholder={a.preferredDate}
-                            value={approveDates[a.id] ?? ''}
-                            onChange={(e) =>
-                              setApproveDates((prev) => ({ ...prev, [a.id]: e.target.value }))
-                            }
-                            title="Дата приёма (ДД.ММ.ГГГГ)"
-                          />
-                          <input
-                            className="mc-field__input mc-field__input--sm"
-                            type="text"
-                            placeholder="Заметки"
-                            value={approveNotes[a.id] ?? ''}
-                            onChange={(e) =>
-                              setApproveNotes((prev) => ({ ...prev, [a.id]: e.target.value }))
-                            }
-                          />
                           <button
                             type="button"
                             className="mc-btn mc-btn--primary mc-btn--sm"
                             disabled={actionId === a.id}
-                            onClick={() => void handleApprove(a.id, a.preferredDate)}
+                            onClick={() => openApproveModal(a)}
                           >
                             Принять
                           </button>
@@ -220,6 +227,83 @@ export function DoctorAppointmentsPanel() {
           </table>
         </div>
       )}
+
+      <Modal
+        open={approveTarget !== null}
+        title="Подтверждение приёма"
+        onClose={closeApproveModal}
+      >
+        {approveTarget && (
+          <>
+            <div className="mc-modal-meta">
+              <p className="mc-modal-meta__row">
+                <span>Пациент</span>
+                <strong>{approveTarget.patientName}</strong>
+              </p>
+              <p className="mc-modal-meta__row">
+                <span>Желаемая дата</span>
+                <strong>{approveTarget.preferredDate}</strong>
+              </p>
+              {approveTarget.notes && (
+                <p className="mc-modal-meta__comment">{approveTarget.notes}</p>
+              )}
+            </div>
+
+            <FormMessages
+              errors={[modalError]}
+              suppressToast
+              className="mc-form-messages--modal"
+            />
+
+            <div className="mc-modal-form">
+              <label className="mc-field">
+                <span className="mc-field__label">Дата приёма</span>
+                <input
+                  className="mc-field__input"
+                  type="text"
+                  placeholder="ДД.ММ.ГГГГ"
+                  value={approveDates[approveTarget.id] ?? approveTarget.preferredDate}
+                  onChange={(e) => {
+                    setModalError(null)
+                    setApproveDates((prev) => ({ ...prev, [approveTarget.id]: e.target.value }))
+                  }}
+                />
+              </label>
+              <label className="mc-field">
+                <span className="mc-field__label">Заметки к визиту</span>
+                <input
+                  className="mc-field__input"
+                  type="text"
+                  placeholder="Необязательно"
+                  value={approveNotes[approveTarget.id] ?? ''}
+                  onChange={(e) =>
+                    setApproveNotes((prev) => ({ ...prev, [approveTarget.id]: e.target.value }))
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="mc-modal__actions">
+              <button
+                type="button"
+                className="mc-btn mc-btn--primary"
+                disabled={modalBusy}
+                onClick={() => void handleApprove()}
+              >
+                {modalBusy ? 'Сохранение…' : 'Подтвердить приём'}
+              </button>
+              <button
+                type="button"
+                className="mc-btn mc-btn--ghost"
+                disabled={modalBusy}
+                onClick={closeApproveModal}
+              >
+                Отмена
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
     </section>
   )
 }
