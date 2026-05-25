@@ -1,18 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId } from 'react'
 import { useToast } from '../context/ToastContext'
+import { releaseErrorToastScope, syncErrorToasts } from '../utils/errorToastDedup'
 
 export function useErrorToast(error: string | null | undefined) {
   const { pushError } = useToast()
-  const lastMessage = useRef<string | null>(null)
+  const scope = useId()
 
   useEffect(() => {
     const message = error?.trim() || null
-    if (!message) {
-      lastMessage.current = null
-      return
+    syncErrorToasts(scope, message ? [message] : [], pushError)
+  }, [error, pushError, scope])
+
+  useEffect(() => {
+    return () => {
+      releaseErrorToastScope(scope)
     }
-    if (message === lastMessage.current) return
-    pushError(message)
-    lastMessage.current = message
-  }, [error, pushError])
+  }, [scope])
 }

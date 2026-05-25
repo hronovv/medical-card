@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, type ReactNode } from 'react'
 import { useToast } from '../context/ToastContext'
+import { releaseErrorToastScope, syncErrorToasts } from '../utils/errorToastDedup'
 
 type FormMessagesProps = {
   errors?: (string | null | undefined)[]
@@ -19,23 +20,23 @@ export function FormMessages({
   children,
 }: FormMessagesProps) {
   const { pushError } = useToast()
+  const scope = useId()
   const errorItems = errors.filter((msg): msg is string => Boolean(msg?.trim()))
   const hintItems = hints.filter((msg): msg is string => Boolean(msg?.trim()))
-  const lastSerialized = useRef('')
   const showInlineErrors = inline || suppressToast
+  const errorKey = errorItems.join('\u0001')
 
   useEffect(() => {
     if (suppressToast) return
+    const messages = errorKey ? errorKey.split('\u0001') : []
+    syncErrorToasts(scope, messages, pushError)
+  }, [errorKey, pushError, suppressToast, scope])
 
-    const serialized = errorItems.join('\u0001')
-    if (!serialized) {
-      lastSerialized.current = ''
-      return
+  useEffect(() => {
+    return () => {
+      releaseErrorToastScope(scope)
     }
-    if (serialized === lastSerialized.current) return
-    errorItems.forEach((msg) => pushError(msg))
-    lastSerialized.current = serialized
-  }, [errorItems, pushError, suppressToast])
+  }, [scope])
 
   if (
     (!showInlineErrors || errorItems.length === 0) &&

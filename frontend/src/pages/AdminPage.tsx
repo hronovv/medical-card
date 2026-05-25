@@ -312,6 +312,7 @@ export function AdminPage() {
             type="button"
             className="mc-back mc-admin-card-view__back"
             onClick={() => {
+              setError(null)
               setCardPatientId(null)
               setCardPatientName('')
             }}
@@ -526,6 +527,7 @@ export function AdminPage() {
                             className="mc-btn mc-btn--primary mc-btn--sm"
                             disabled={busy}
                             onClick={() => {
+                              setError(null)
                               setCardPatientId(p.id)
                               setCardPatientName(p.fullName)
                             }}
