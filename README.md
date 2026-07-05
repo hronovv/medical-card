@@ -4,6 +4,19 @@
 
 Built as a portfolio project demonstrating production-oriented patterns: layered Go backend, PostgreSQL schema design, Redis-backed sessions, REST API with pagination, and a React SPA with typed API clients.
 
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="img/img1.png" width="100%"></td>
+      <td><img src="img/img2.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td><img src="img/img3.png" width="100%"></td>
+      <td><img src="img/img4.png" width="100%"></td>
+    </tr>
+  </table>
+</div>
+
 ---
 
 ## Table of Contents
